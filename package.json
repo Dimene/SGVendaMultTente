@@ -1,0 +1,36 @@
+{
+    "$schema": "https://www.schemastore.org/package.json",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "vite build",
+        "dev": "vite"
+    },
+    "devDependencies": {
+        "@inertiajs/vue3": "^2.0.0",
+        "@tailwindcss/forms": "^0.5.3",
+        "@tailwindcss/vite": "^4.0.0",
+        "@vitejs/plugin-vue": "^6.0.8",
+        "autoprefixer": "^10.4.12",
+        "concurrently": "^9.0.1",
+        "laravel-vite-plugin": "3.1",
+        "postcss": "^8.4.31",
+        "tailwindcss": "^3.2.1",
+        "vite": "^8.2.0",
+        "vue": "^3.4.0"
+    },
+    "dependencies": {
+        "@fortawesome/fontawesome-free": "^7.2.0",
+        "ag-grid-community": "^35.3.1",
+        "ag-grid-vue3": "^35.3.1",
+        "apexcharts": "^6.7.0",
+        "exceljs": "^3.4.0",
+        "file-saver": "^2.0.5",
+        "jspdf": "^4.2.1",
+        "jspdf-autotable": "^5.0.8",
+        "lodash": "^4.18.1",
+        "sweetalert2": "^11.26.25",
+        "vue3-apexcharts": "^1.11.1",
+        "xlsx": "^0.18.5"
+    }
+}
