@@ -165,6 +165,7 @@ function atributosDados(nomeGrupo) {
         "Nome",
         "IVA",
         "lucro",
+        "Desconto (%)",
     ];
 
     const colunastabela = [
@@ -186,9 +187,9 @@ function atributosDados(nomeGrupo) {
             width: 100,
             cellRenderer: (params) => {
                 if (params.value) {
-                    return `<img src="${params.value}" class="h-10 w-10 object-cover rounded" />`;
+                    return `<img src="${params.value}" class="object-cover w-10 h-10 rounded" />`;
                 }
-                return `<i class="fas fa-image text-gray-300 text-2xl"></i>`;
+                return `<i class="text-2xl text-gray-300 fas fa-image"></i>`;
             }
         },
         {
@@ -217,6 +218,14 @@ function atributosDados(nomeGrupo) {
             sortable: true,
             filter: true,
             width: 150
+        },
+        {
+            field: "Desconto (%)",
+            headerName: "Desconto (%)",
+            sortable: true,
+            filter: true,
+            width: 130,
+            valueFormatter: (params) => `${Number(params.value || 0).toFixed(2)}%`
         }
     ];
 
@@ -247,8 +256,11 @@ function atributosDados(nomeGrupo) {
     colunas.push(
         "Stock",
         "Preço Compra",
-        "Preço Venda",
-        "Venda com IVA"
+        "Preço Venda cliente 1",
+        "Preço Venda cliente 2",
+        "Desconto (%)",
+        "Venda com IVA cliente 1",
+        "Venda com IVA cliente 2"
     );
 
     colunastabela.push(
@@ -275,74 +287,77 @@ function atributosDados(nomeGrupo) {
             }
         },
         {
-            field: "Preço Venda",
-            headerName: "Preço Venda/unid.",
+            field: "Preço Venda cliente 1",
+            headerName: "Preço Venda 1 - Singular",
             sortable: true,
             filter: true,
-            width: 160,
+            width: 180,
+            valueFormatter: (params) => {
+                const valor = params.value ?? params.data?.['Preço Venda'] ?? 0;
+                return valor ? `MZ ${Number(valor).toFixed(2)}` : 'MZ 0.00';
+            }
+        },
+        {
+            field: "Preço Venda cliente 2",
+            headerName: "Preço Venda 2 - Empresa",
+            sortable: true,
+            filter: true,
+            width: 180,
             valueFormatter: (params) => {
                 return params.value ? `MZ ${Number(params.value).toFixed(2)}` : 'MZ 0.00';
             }
         },
-       {
-    field: "Venda com IVA",
-    headerName: "Venda c/ IVA.",
-    sortable: true,
-    filter: true,
-    width: 160,
-    valueFormatter: (params) => {
-        return `MZ ${Number(params.value || 0).toFixed(2)}`;
-    }
-},
+        {
+            field: "Venda com IVA cliente 1",
+            headerName: "Venda c/ IVA cliente 1.",
+            sortable: true,
+            filter: true,
+            width: 180,
+            valueFormatter: (params) => {
+                return `MZ ${Number(params.value || 0).toFixed(2)}`;
+            }
+        },
+        {
+            field: "Venda com IVA cliente 2",
+            headerName: "Venda c/ IVA cliente 2.",
+            sortable: true,
+            filter: true,
+            width: 180,
+            valueFormatter: (params) => {
+                return `MZ ${Number(params.value || 0).toFixed(2)}`;
+            }
+        },
         {
     field: "accoes",
     headerName: "Ações",
     width: 120,
     sortable: false,
     filter: false,
-
-
-
-
     cellRenderer: () => {
+        return `
+            <div class="flex items-center justify-center gap-2">
+                <button class="inline-flex items-center justify-center w-8 h-8 text-sm text-white transition-all duration-200 bg-indigo-600 rounded-lg shadow-sm btn-visualizar hover:bg-indigo-700" title="Visualizar">
+                    <i class="fas fa-eye"></i>
+                </button>
+                <button class="inline-flex items-center justify-center w-8 h-8 text-sm text-white transition-all duration-200 bg-red-600 rounded-lg shadow-sm btn-eliminar hover:bg-red-700" title="Apagar">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `;
+    },
+    onCellClicked: (params) => {
+        const button = params.event.target.closest("button");
 
-    return `
-        <div class="flex gap-1 justify-center">
+        if (!button) return;
 
-            <button class="btn-editar px-2 py-1 bg-blue-500 text-white rounded text-xs">
-                <i class="fas fa-edit"></i>
-            </button>
+        if (button.classList.contains("btn-visualizar")) {
+            editarItem(params.data);
+        }
 
-            <button class="btn-eliminar px-2 py-1 bg-red-500 text-white rounded text-xs">
-                <i class="fas fa-trash"></i>
-            </button>
-
-        </div>
-    `;
-},
-onCellClicked: (params) => {
-
-    const button = params.event.target.closest("button");
-
-    if (!button) return;
-
-
-    if(button.classList.contains("btn-editar")) {
-
-        editarItem(params.data);
-
+        if (button.classList.contains("btn-eliminar")) {
+            eliminarItem(params.data);
+        }
     }
-
-
-    if(button.classList.contains("btn-eliminar")) {
-
-        console.log("Objeto completo:", params.data);
-
-        eliminarItem(params.data);
-
-    }
-
-}
 }
     );
 
@@ -604,9 +619,13 @@ watch(
         let totalVendaIvaTemp = 0;
 
         novoItem.forEach(item => {
+            const precoVendaCliente1 = Number(item["Preço Venda cliente 1"] ?? item["Preço Venda"] ?? 0);
+            const precoVendaCliente2 = Number(item["Preço Venda cliente 2"] ?? 0);
+            const vendaComIvaCliente1 = Number(item["Venda com IVA cliente 1"] ?? 0);
+            const vendaComIvaCliente2 = Number(item["Venda com IVA cliente 2"] ?? 0);
             totalCompraTemp += Number(item["Preço Compra"] || 0) * Number(item["Stock"] || 0);
-            totalVendaTemp += Number(item["Preço Venda"] || 0) * Number(item["Stock"] || 0);
-            totalVendaIvaTemp += Number(item["Venda com IVA"] || 0) * Number(item["Stock"] || 0);
+            totalVendaTemp += (precoVendaCliente1 + precoVendaCliente2) * Number(item["Stock"] || 0);
+            totalVendaIvaTemp += (vendaComIvaCliente1 + vendaComIvaCliente2) * Number(item["Stock"] || 0);
         });
 
         totalCompra.value = totalCompraTemp;
@@ -711,14 +730,14 @@ const produtosPorGrupo = computed(() => {
 
     <div class="bg-white rounded-lg shadow">
         <!-- Header -->
-        <div class="p-4 border-b flex flex-wrap items-center justify-between gap-4">
+        <div class="flex flex-wrap items-center justify-between gap-4 p-4 border-b">
             <h1 class="text-xl font-bold text-gray-800">
-                <i class="fas fa-shopping-cart mr-2 text-blue-600"></i>
+                <i class="mr-2 text-blue-600 fas fa-shopping-cart"></i>
                 Compras
             </h1>
 
             <button
-                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition"
+                class="flex items-center gap-2 px-4 py-2 text-white transition bg-green-600 rounded-lg hover:bg-green-700"
                 @click="abrirModal = true"
             >
                 <i class="fas fa-plus"></i>
@@ -727,7 +746,7 @@ const produtosPorGrupo = computed(() => {
         </div>
 
 <!-- <button
-class="bg-green-600 text-white px-4 py-2 rounded"
+class="px-4 py-2 text-white bg-green-600 rounded"
 @click="gerarModeloExcel">
 
 <i class="fas fa-file-excel"></i>
@@ -738,7 +757,7 @@ Baixar Modelo Excel
 
   <meta name="csrf-token" content="{{ csrf_token() }}">
         <!-- Grupos -->
-        <nav class="flex gap-2 border-b px-4 pt-2 flex-wrap">
+        <nav class="flex flex-wrap gap-2 px-4 pt-2 border-b">
             <div
                 v-for="(item, index) in grupo"
                 :key="item.nome"
@@ -760,7 +779,7 @@ Baixar Modelo Excel
                 <button
                     v-if="grupo.length > 1"
                     @click="removergrupo(index)"
-                    class="hover:bg-gray-200 p-2 rounded"
+                    class="p-2 rounded hover:bg-gray-200"
                 >
                     <i class="fas fa-times"></i>
                 </button>
@@ -772,12 +791,12 @@ Baixar Modelo Excel
             <!-- Pesquisa -->
             <div class="mb-4">
                 <div class="relative">
-                    <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                    <i class="absolute text-gray-400 fas fa-search left-3 top-3"></i>
                     <input
                         v-model="searchText"
                         type="text"
                         placeholder="Pesquisar produtos..."
-                        class="border rounded-lg pl-10 pr-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        class="w-full py-2 pl-10 pr-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                 </div>
             </div>
@@ -806,9 +825,9 @@ Baixar Modelo Excel
 
             </div>
             <!-- Rodapé com contagem -->
-            <div class="mt-4 text-sm text-gray-500 flex justify-between items-center">
+            <div class="flex items-center justify-between mt-4 text-sm text-gray-500">
                 <span>
-                    <i class="fas fa-boxes mr-1"></i>
+                    <i class="mr-1 fas fa-boxes"></i>
                     Total: {{ rowData.length }} itens
                 </span>
                 <span>
@@ -833,7 +852,7 @@ Baixar Modelo Excel
     />
 
     <!-- Debug (remover em produção) -->
-    <pre v-if="false" class="mt-4 p-4 bg-gray-100 rounded text-xs overflow-auto">
+    <pre v-if="false" class="p-4 mt-4 overflow-auto text-xs bg-gray-100 rounded">
         {{ categoriaDados }}
     </pre>
 </template>

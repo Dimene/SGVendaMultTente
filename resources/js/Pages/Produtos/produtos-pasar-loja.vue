@@ -113,7 +113,13 @@ const alterarQuantidade = (produtoId, incremento) => {
 // ============ TOTAIS ============
 const totalCarrinho = computed(() => {
     return produtosAdicionados.value.reduce((total, p) => {
-        return total + (Number(p.preco_venda || 0) * (p.quantidade || 1));
+        return total + (Number(p.preco_venda1 || p.preco_venda || 0) * (p.quantidade || 1));
+    }, 0);
+});
+
+const totalCarrinho2 = computed(() => {
+    return produtosAdicionados.value.reduce((total, p) => {
+        return total + (Number(p.preco_venda2 || 0) * (p.quantidade || 1));
     }, 0);
 });
 
@@ -125,42 +131,121 @@ const totalItens = computed(() => {
 
 // ============ PREPARAR DADOS PARA IMPRESSÃO ============
 const prepararComprovativo = (responseve) => {
-  const  idloja=responseve.dadosvindo?.loja_id;
-
-     console.log(responseve.dadosvindo.itens);
-    const loja = props.lojas.find(l => l.id ===idloja);
+    const dadosTransferidos = responseve.dados || [];
     comprovativoData.value = {
-        loja: loja || { Desc: 'Loja não encontrada' },
-        itens:  responseve.dadosvindo.itens.map(p => ({
+        loja: { Desc: responseve.nomeloja || 'Loja não encontrada' },
+        itens: dadosTransferidos.map(p => ({
             nome: p.nome || 'Produto',
-            quantidade: p.Quantidade || 1,
-            preco_unitario: Number(p.precoVenda || 0),
-            subtotal: Number(p.precoVenda || 0) * (p.Quantidade || 1)
+            categoria: p.categoria || '',
+            quantidade: Number(p.Quantidade || 0),
+            preco_venda1: Number(p.precoVenda1 || 0),
+            preco_venda2: Number(p.precoVenda2 || 0),
+            subtotal1: Number(p.precoVenda1 || 0) * Number(p.Quantidade || 0),
+            subtotal2: Number(p.precoVenda2 || 0) * Number(p.Quantidade || 0)
         })),
-        total: totalCarrinho.value,
+        total1: dadosTransferidos.reduce((total, item) => {
+            return total + Number(item.precoVenda1 || 0) * Number(item.Quantidade || 0);
+        }, 0),
+        total2: dadosTransferidos.reduce((total, item) => {
+            return total + Number(item.precoVenda2 || 0) * Number(item.Quantidade || 0);
+        }, 0),
         data: new Date().toLocaleDateString('pt-MZ'),
         hora: new Date().toLocaleTimeString('pt-MZ')
     };
 };
 
 // ============ IMPRIMIR COMPROVATIVO ============
-const imprimirComprovativo = (responseve) => {
-    // Prepara os dados (caso não tenha sido feito ainda)
-    if (comprovativoData.value.itens.length === 0) {
-        prepararComprovativo(responseve);
+const escaparHtml = (valor) => String(valor ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+
+const imprimirComprovativo = (dados = comprovativoData.value) => {
+    if (!dados?.itens?.length) {
+        Swal.fire('Erro', 'Não existem produtos para imprimir.', 'error');
+        return;
     }
-    // Exibe a div de impressão e chama a impressão
-    const printArea = document.getElementById('print-area');
-    if (printArea) {
-        printArea.style.display = 'block';
-        window.print();
-        // Após a impressão (ou cancelamento), ocultamos novamente
-        setTimeout(() => {
-            printArea.style.display = 'none';
-        }, 1000);
-    } else {
-        Swal.fire('Erro', 'Não foi possível encontrar a área de impressão.', 'error');
+
+    const printWindow = window.open('', '_blank', 'width=900,height=700');
+    if (!printWindow) {
+        Swal.fire('Pop-up bloqueado', 'Permita pop-ups no navegador para imprimir.', 'warning');
+        return;
     }
+
+    const linhas = dados.itens.map((item, index) => `
+        <tr>
+            <td>${index + 1}</td>
+            <td>${escaparHtml(item.nome)}</td>
+            <td>${escaparHtml(item.categoria || '-')}</td>
+            <td class="number">${item.quantidade}</td>
+            <td class="number">${formatarMoeda(item.preco_venda1)}</td>
+            <td class="number">${formatarMoeda(item.preco_venda2)}</td>
+        </tr>
+    `).join('');
+
+    printWindow.document.write(`
+        <!doctype html>
+        <html lang="pt">
+        <head>
+            <meta charset="UTF-8">
+            <title>Comprovativo de transferência</title>
+            <style>
+                @page { size: A4 portrait; margin: 14mm; }
+                * { box-sizing: border-box; }
+                body { margin: 0; color: #1f2937; font-family: Arial, sans-serif; font-size: 12px; }
+                .document { width: 100%; }
+                .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #1d4ed8; padding-bottom: 16px; }
+                h1 { margin: 0 0 8px; color: #1d4ed8; font-size: 22px; }
+                .meta { text-align: right; color: #4b5563; line-height: 1.6; }
+                .summary { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 22px 0 16px; }
+                .summary div { border: 1px solid #d1d5db; border-radius: 5px; padding: 10px; }
+                .label { display: block; color: #6b7280; font-size: 10px; text-transform: uppercase; }
+                .value { display: block; margin-top: 4px; font-weight: 700; font-size: 14px; }
+                table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+                th { background: #1d4ed8; color: #fff; text-align: left; padding: 9px 8px; font-size: 11px; }
+                td { border-bottom: 1px solid #d1d5db; padding: 9px 8px; }
+                .number { text-align: right; white-space: nowrap; }
+                tfoot td { border-top: 2px solid #1d4ed8; border-bottom: 0; font-weight: 700; font-size: 14px; }
+                .footer { margin-top: 42px; border-top: 1px solid #d1d5db; padding-top: 12px; text-align: center; color: #6b7280; }
+            </style>
+        </head>
+        <body>
+            <main class="document">
+                <header class="header">
+                    <div>
+                        <h1>Comprovativo de Transferência</h1>
+                        <div>Produtos enviados para a loja</div>
+                    </div>
+                    <div class="meta">
+                        <div><strong>Data:</strong> ${escaparHtml(dados.data)}</div>
+                        <div><strong>Hora:</strong> ${escaparHtml(dados.hora)}</div>
+                    </div>
+                </header>
+                <section class="summary">
+                    <div><span class="label">Origem</span><span class="value">Armazém</span></div>
+                    <div><span class="label">Destino</span><span class="value">${escaparHtml(dados.loja?.Desc || 'N/A')}</span></div>
+                </section>
+                <table>
+                    <thead><tr><th>#</th><th>Produto</th><th>Categoria</th><th class="number">Qtd.</th><th class="number">Preço 1 - Singular</th><th class="number">Preço 2 - Empresa</th></tr></thead>
+                    <tbody>${linhas}</tbody>
+                    <tfoot>
+                        <tr><td colspan="5" class="number">Total Singular</td><td class="number">${formatarMoeda(dados.total1)}</td></tr>
+                        <tr><td colspan="5" class="number">Total Empresa</td><td class="number">${formatarMoeda(dados.total2)}</td></tr>
+                    </tfoot>
+                </table>
+                <footer class="footer">Documento emitido automaticamente pelo sistema.</footer>
+            </main>
+            <script>
+                window.onload = function () {
+                    setTimeout(function () { window.print(); window.close(); }, 300);
+                };
+            <\/script>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
 };
 
 // ============ FINALIZAR COMPRA ============
@@ -180,9 +265,12 @@ const finalizarCompra = async () => {
         itens: produtosAdicionados.value.map(p => ({
             produto_id: p.id,
             quantidade: p.quantidade || 1,
-            preco_unitario: p.preco_venda || 0,
+            preco_venda1: p.preco_venda1 || p.preco_venda || 0,
+            preco_venda2: p.preco_venda2 || 0,
         })),
         total: totalCarrinho.value,
+        total_preco_venda1: totalCarrinho.value,
+        total_preco_venda2: totalCarrinho2.value,
         data_compra: new Date().toISOString(),
     };
 
@@ -213,7 +301,7 @@ const finalizarCompra = async () => {
             allowOutsideClick: false
         }).then((result) => {
             if (result.isConfirmed) {
-                imprimirComprovativo();
+                imprimirComprovativo(comprovativoData.value);
             }
         });
 
@@ -289,13 +377,11 @@ const colunastabela = [
         valueGetter: (params) => params.node.data?.estoque ?? " "
     },
     {
-        headerName: "Pr. Venda",
+        headerName: "Preços de Venda",
         sortable: true,
         filter: true,
-        width: 120,
-        valueGetter: (params) => params.node.data?.preco_venda
-            ? `MT ${Number(params.node.data.preco_venda).toFixed(2)}`
-            : " "
+        width: 180,
+        valueGetter: (params) => `Singular: MT ${Number(params.node.data?.preco_venda1 || params.node.data?.preco_venda || 0).toFixed(2)} | Empresa: MT ${Number(params.node.data?.preco_venda2 || 0).toFixed(2)}`
     },
     {
         headerName: "Ações",
@@ -303,11 +389,11 @@ const colunastabela = [
         filter: false,
         width: 140,
         cellRenderer: () => `
-            <div class="flex gap-1 justify-center">
-                <button class="btn-adicionar px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600 transition-colors">
+            <div class="flex justify-center gap-1">
+                <button class="px-2 py-1 text-xs text-white transition-colors bg-blue-500 rounded btn-adicionar hover:bg-blue-600">
                     <i class="fas fa-shopping-bag"></i>
                 </button>
-                <button class="btn-visualizar px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600 transition-colors">
+                <button class="px-2 py-1 text-xs text-white transition-colors bg-green-500 rounded btn-visualizar hover:bg-green-600">
                     <i class="fas fa-eye"></i>
                 </button>
             </div>
@@ -363,11 +449,11 @@ const getStatusBadgeColor = (estoque) => {
 <template>
     <div class="h-full">
         <!-- Título e cabeçalho -->
-        <div class="mb-4 flex items-center justify-between flex-wrap gap-2">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
             <button
                 type="button"
                 @click="voltar"
-                class="px-4 py-2 bg-gray-500 text-white rounded-lg"
+                class="px-4 py-2 text-white bg-gray-500 rounded-lg"
             >
                 ← Voltar
             </button>
@@ -379,7 +465,7 @@ const getStatusBadgeColor = (estoque) => {
             <div class="flex items-center gap-3">
                 <span
                     v-if="totalItens > 0"
-                    class="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full text-sm font-medium flex items-center gap-2"
+                    class="flex items-center gap-2 px-3 py-1 text-sm font-medium text-blue-600 bg-blue-100 rounded-full dark:bg-blue-900/30 dark:text-blue-400"
                 >
                     🛒 {{ totalItens }} itens
                     <span class="text-xs">({{ formatarMoeda(totalCarrinho) }})</span>
@@ -398,7 +484,7 @@ const getStatusBadgeColor = (estoque) => {
                     v-model="searchText"
                     type="text"
                     placeholder="Pesquisar produto..."
-                    class="w-full border rounded-lg px-4 py-2 mb-4"
+                    class="w-full px-4 py-2 mb-4 border rounded-lg"
                 />
 
                 <AgGridVue
@@ -407,7 +493,7 @@ const getStatusBadgeColor = (estoque) => {
                     :pagination="true"
                     :quickFilterText="searchText"
                     :paginationPageSize="15"
-                    class="ag-theme-alpine h-full w-full"
+                    class="w-full h-full ag-theme-alpine"
                     @grid-ready="onGridReady"
                     :defaultColDef="{
                         resizable: true,
@@ -425,29 +511,29 @@ const getStatusBadgeColor = (estoque) => {
                 <!-- Estado vazio -->
                 <div
                     v-if="!isPanelOpen"
-                    class="h-full flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-800/50 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-600 p-8 text-center"
+                    class="flex flex-col items-center justify-center h-full p-8 text-center border-2 border-gray-300 border-dashed bg-gray-50 dark:bg-gray-800/50 rounded-2xl dark:border-gray-600"
                 >
-                    <div class="text-6xl mb-4">👈</div>
+                    <div class="mb-4 text-6xl">👈</div>
                     <h4 class="text-lg font-semibold text-gray-800 dark:text-white">
                         Selecione um produto
                     </h4>
-                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-2 max-w-xs">
+                    <p class="max-w-xs mt-2 text-sm text-gray-500 dark:text-gray-400">
                         Clique em 👁️ Visualizar para ver os detalhes ou
                         🛒 Adicionar para colocar no carrinho
                     </p>
                 </div>
 
                 <!-- Painel aberto -->
-                <div v-else class="h-full bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden">
+                <div v-else class="flex flex-col h-full overflow-hidden bg-white border border-gray-200 shadow-lg dark:bg-gray-800 rounded-2xl dark:border-gray-700">
                     <!-- Cabeçalho -->
-                    <div class="flex-shrink-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between">
-                        <div class="flex items-center gap-2 min-w-0">
-                            <div class="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                    <div class="flex items-center justify-between flex-shrink-0 px-4 py-3 bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+                        <div class="flex items-center min-w-0 gap-2">
+                            <div class="flex items-center justify-center flex-shrink-0 w-8 h-8 bg-blue-100 rounded-lg dark:bg-blue-900/30">
                                 <span class="text-lg">{{ activeTab === 'detalhes' ? '📦' : '🛒' }}</span>
                             </div>
                             <div class="min-w-0">
-                                <h4 class="text-sm font-semibold text-gray-800 dark:text-white truncate">
-                                    {{ activeTab === 'detalhes' ? selectedProduct?.produto?.nome || 'Detalhes' : 'Carrinho de Compras' }}
+                                <h4 class="text-sm font-semibold text-gray-800 truncate dark:text-white">
+                                    {{ activeTab === 'detalhes' ? selectedProduct?.produto?.nome || 'Detalhes' : 'adicionar a Loja' }}
                                 </h4>
                                 <p class="text-xs text-gray-500 truncate">
                                     {{ activeTab === 'detalhes' ? `Código: #${selectedProduct?.id || 'N/A'}` : `${totalItens} itens adicionados` }}
@@ -456,7 +542,7 @@ const getStatusBadgeColor = (estoque) => {
                         </div>
                         <button
                             @click="fecharPainel"
-                            class="w-7 h-7 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center transition-colors flex-shrink-0"
+                            class="flex items-center justify-center flex-shrink-0 transition-colors rounded-lg w-7 h-7 hover:bg-gray-100 dark:hover:bg-gray-700"
                         >
                             <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -465,11 +551,11 @@ const getStatusBadgeColor = (estoque) => {
                     </div>
 
                     <!-- Abas -->
-                    <div class="flex-shrink-0 border-b border-gray-200 dark:border-gray-700 px-4">
+                    <div class="flex-shrink-0 px-4 border-b border-gray-200 dark:border-gray-700">
                         <div class="flex gap-1">
                             <button
                                 @click="activeTab = 'detalhes'"
-                                class="py-2 px-3 text-xs font-medium transition-colors relative rounded-t-lg"
+                                class="relative px-3 py-2 text-xs font-medium transition-colors rounded-t-lg"
                                 :class="activeTab === 'detalhes'
                                     ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
                                     : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
@@ -495,31 +581,31 @@ const getStatusBadgeColor = (estoque) => {
                     </div>
 
                     <!-- CONTEÚDO: ABA DETALHES -->
-                    <div v-show="activeTab === 'detalhes'" class="flex-1 overflow-y-auto p-4 space-y-4">
+                    <div v-show="activeTab === 'detalhes'" class="flex-1 p-4 space-y-4 overflow-y-auto">
                         <div v-if="selectedProduct" class="space-y-4">
                             <!-- Cards de info (mantido igual ao original) -->
                             <div class="grid grid-cols-2 gap-3">
-                                <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                                <div class="p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
                                     <label class="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nome</label>
-                                    <p class="mt-1 text-sm font-semibold text-gray-800 dark:text-white truncate">{{ selectedProduct?.produto?.nome || 'N/A' }}</p>
+                                    <p class="mt-1 text-sm font-semibold text-gray-800 truncate dark:text-white">{{ selectedProduct?.produto?.nome || 'N/A' }}</p>
                                 </div>
-                                <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                                <div class="p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
                                     <label class="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Categoria</label>
                                     <p class="mt-1 text-sm font-semibold text-gray-800 dark:text-white">{{ selectedProduct?.produto?.categoria?.nome || 'N/A' }}</p>
                                 </div>
-                                <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                                <div class="p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
                                     <label class="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Grupo</label>
                                     <p class="mt-1 text-sm font-semibold text-gray-800 dark:text-white">{{ selectedProduct?.produto?.grupo?.nome || 'N/A' }}</p>
                                 </div>
-                                <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                                <div class="p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
                                     <label class="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">ID Produto</label>
                                     <p class="mt-1 text-sm font-semibold text-gray-800 dark:text-white">#{{ selectedProduct?.produto_id || 'N/A' }}</p>
                                 </div>
-                                <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                                <div class="p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
                                     <label class="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Armazém</label>
                                     <p class="mt-1 text-sm font-semibold text-gray-800 dark:text-white">#{{ selectedProduct?.Armazem_id || 'N/A' }}</p>
                                 </div>
-                                <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                                <div class="p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
                                     <label class="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estoque</label>
                                     <p class="mt-1 text-sm font-semibold" :class="getStatusBadgeColor(selectedProduct?.estoque || 0)">
                                         {{ selectedProduct?.estoque || 0 }} unidades
@@ -529,35 +615,39 @@ const getStatusBadgeColor = (estoque) => {
 
                             <!-- Preços -->
                             <div class="grid grid-cols-2 gap-3">
-                                <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                                <div class="p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
                                     <label class="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Preço Compra</label>
                                     <p class="mt-1 text-sm font-semibold text-orange-600 dark:text-orange-400">{{ formatarMoeda(selectedProduct?.preco_compra) }}</p>
                                 </div>
-                                <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
-                                    <label class="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Preço Venda</label>
-                                    <p class="mt-1 text-sm font-semibold text-green-600 dark:text-green-400">{{ formatarMoeda(selectedProduct?.preco_venda) }}</p>
+                                <div class="p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
+                                    <label class="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Preço Venda 1 - Singular</label>
+                                    <p class="mt-1 text-sm font-semibold text-green-600 dark:text-green-400">{{ formatarMoeda(selectedProduct?.preco_venda1 || selectedProduct?.preco_venda) }}</p>
                                 </div>
-                                <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                                <div class="p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
+                                    <label class="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Preço Venda 2 - Empresa</label>
+                                    <p class="mt-1 text-sm font-semibold text-green-600 dark:text-green-400">{{ formatarMoeda(selectedProduct?.preco_venda2) }}</p>
+                                </div>
+                                <div class="p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
                                     <label class="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">IVA</label>
                                     <p class="mt-1 text-sm font-semibold text-purple-600 dark:text-purple-400">{{ selectedProduct?.iva || 0 }}%</p>
                                 </div>
-                                <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                                <div class="p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
                                     <label class="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Desconto</label>
                                     <p class="mt-1 text-sm font-semibold text-red-600 dark:text-red-400">{{ selectedProduct?.desconto || 0 }}%</p>
                                 </div>
                             </div>
 
                             <!-- Margem de lucro -->
-                            <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                            <div class="p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
                                 <label class="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Margem de Lucro</label>
-                                <div class="mt-1 flex items-center gap-3">
+                                <div class="flex items-center gap-3 mt-1">
                                     <span class="text-sm font-bold text-purple-600 dark:text-purple-400">
                                         {{ selectedProduct?.preco_venda && selectedProduct?.preco_compra
                                             ? ((selectedProduct.preco_venda - selectedProduct.preco_compra) / selectedProduct.preco_compra * 100).toFixed(1)
                                             : 0 }}%
                                     </span>
                                     <div class="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                                        <div class="h-full bg-gradient-to-r from-green-500 to-purple-500 rounded-full transition-all duration-500"
+                                        <div class="h-full transition-all duration-500 rounded-full bg-gradient-to-r from-green-500 to-purple-500"
                                              :style="{ width: `${selectedProduct?.preco_venda && selectedProduct?.preco_compra ? Math.min(((selectedProduct.preco_venda - selectedProduct.preco_compra) / selectedProduct.preco_compra * 100), 100) : 0}%` }"
                                         ></div>
                                     </div>
@@ -565,28 +655,28 @@ const getStatusBadgeColor = (estoque) => {
                             </div>
 
                             <!-- Atributos -->
-                            <div v-if="Object.keys(extrairAtributos(selectedProduct)).length > 0" class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                            <div v-if="Object.keys(extrairAtributos(selectedProduct)).length > 0" class="p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
                                 <label class="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-2">🔧 Especificações</label>
-                                <div class="mt-2 grid grid-cols-2 gap-2">
+                                <div class="grid grid-cols-2 gap-2 mt-2">
                                     <div v-for="atributo in atributosParaLista(selectedProduct)" :key="atributo.label"
-                                         class="flex items-center gap-2 p-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+                                         class="flex items-center gap-2 p-2 bg-white border border-gray-200 rounded-lg dark:bg-gray-800 dark:border-gray-600">
                                         <span class="text-base">{{ atributo.icon }}</span>
                                         <div class="min-w-0">
                                             <p class="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase">{{ atributo.label }}</p>
-                                            <p class="text-xs font-semibold text-gray-800 dark:text-white truncate">{{ atributo.value }}</p>
+                                            <p class="text-xs font-semibold text-gray-800 truncate dark:text-white">{{ atributo.value }}</p>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Fotos -->
-                            <div v-if="obterFotos(selectedProduct).length > 0" class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                            <div v-if="obterFotos(selectedProduct).length > 0" class="p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
                                 <label class="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-2">📸 Fotos</label>
-                                <div class="mt-2 flex gap-2 overflow-x-auto pb-2">
+                                <div class="flex gap-2 pb-2 mt-2 overflow-x-auto">
                                     <div v-for="(foto, index) in obterFotos(selectedProduct)" :key="index"
-                                         class="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-700">
+                                         class="flex-shrink-0 w-20 h-20 overflow-hidden bg-gray-100 border border-gray-200 rounded-lg dark:border-gray-600 dark:bg-gray-700">
                                         <img :src="`/storage/${foto}`" :alt="`Foto ${index + 1}`"
-                                             class="w-full h-full object-cover"
+                                             class="object-cover w-full h-full"
                                              @error="(e) => e.target.src = '/images/no-image.png'"
                                         />
                                     </div>
@@ -615,7 +705,7 @@ const getStatusBadgeColor = (estoque) => {
                     </div>
 
                     <!-- CONTEÚDO: ABA ADICIONADOS -->
-                    <div v-show="activeTab === 'adicionados'" class="flex-1 overflow-y-auto p-4">
+                    <div v-show="activeTab === 'adicionados'" class="flex-1 p-4 overflow-y-auto">
                         <!-- Seletor de lojas -->
                         <div class="mb-4">
                             <label for="loja" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -624,7 +714,7 @@ const getStatusBadgeColor = (estoque) => {
                             <select
                                 id="loja"
                                 v-model="lojaSelecionada"
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                class="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                             >
                                 <option value="" disabled>Escolha uma loja</option>
                                 <option
@@ -638,40 +728,42 @@ const getStatusBadgeColor = (estoque) => {
                         </div>
 
                         <!-- Lista do carrinho -->
-                        <div v-if="produtosAdicionados.length === 0" class="h-full flex flex-col items-center justify-center text-center">
-                            <div class="text-5xl mb-3">🛒</div>
+                        <div v-if="produtosAdicionados.length === 0" class="flex flex-col items-center justify-center h-full text-center">
+                            <div class="mb-3 text-5xl">🛒</div>
                             <h5 class="text-sm font-semibold text-gray-800 dark:text-white">Carrinho vazio</h5>
-                            <p class="text-xs text-gray-500 mt-1">Adicione produtos clicando em 🛒</p>
+                            <p class="mt-1 text-xs text-gray-500">Adicione produtos clicando em 🛒</p>
                         </div>
 
                         <div v-else class="space-y-3">
                             <div v-for="produto in produtosAdicionados" :key="produto.id"
-                                 class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+                                 class="p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
                                 <div class="flex items-center justify-between">
                                     <div class="flex-1 min-w-0">
                                         <div class="flex items-center gap-2">
                                             <span class="text-lg">📦</span>
                                             <div class="min-w-0">
-                                                <h6 class="text-sm font-medium text-gray-800 dark:text-white truncate">
+                                                <h6 class="text-sm font-medium text-gray-800 truncate dark:text-white">
                                                     {{ produto?.produto?.nome || 'Produto' }}
                                                 </h6>
-                                                <p class="text-xs text-gray-500">{{ formatarMoeda(produto?.preco_venda) }}</p>
+                                                <p class="text-xs text-gray-500">Singular: {{ formatarMoeda(produto?.preco_venda1 || produto?.preco_venda) }}</p>
+                                                <p class="text-xs text-gray-500">Empresa: {{ formatarMoeda(produto?.preco_venda2) }}</p>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="flex items-center gap-2">
                                         <div class="flex items-center gap-0.5">
                                             <button @click="alterarQuantidade(produto.id, -1)"
-                                                    class="w-6 h-6 rounded bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 flex items-center justify-center transition-colors text-xs font-bold">−</button>
-                                            <span class="w-6 text-center text-sm font-semibold text-gray-800 dark:text-white">{{ produto.quantidade || 1 }}</span>
+                                                    class="flex items-center justify-center w-6 h-6 text-xs font-bold transition-colors bg-gray-200 rounded dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500">−</button>
+                                            <span class="w-6 text-sm font-semibold text-center text-gray-800 dark:text-white">{{ produto.quantidade || 1 }}</span>
                                             <button @click="alterarQuantidade(produto.id, 1)"
-                                                    class="w-6 h-6 rounded bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 flex items-center justify-center transition-colors text-xs font-bold">+</button>
+                                                    class="flex items-center justify-center w-6 h-6 text-xs font-bold transition-colors bg-gray-200 rounded dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500">+</button>
                                         </div>
-                                        <span class="text-sm font-semibold text-blue-600 dark:text-blue-400 min-w-[70px] text-right">
-                                            {{ formatarMoeda(Number(produto?.preco_venda || 0) * (produto.quantidade || 1)) }}
+                                        <span class="text-right text-sm font-semibold text-blue-600 dark:text-blue-400 min-w-[120px]">
+                                            <span class="block">S: {{ formatarMoeda(Number(produto?.preco_venda1 || produto?.preco_venda || 0) * (produto.quantidade || 1)) }}</span>
+                                            <span class="block">E: {{ formatarMoeda(Number(produto?.preco_venda2 || 0) * (produto.quantidade || 1)) }}</span>
                                         </span>
                                         <button @click="removerDoCarrinho(produto.id)"
-                                                class="w-6 h-6 rounded bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 flex items-center justify-center transition-colors">
+                                                class="flex items-center justify-center w-6 h-6 text-red-600 transition-colors bg-red-100 rounded dark:bg-red-900/30 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50">
                                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                             </svg>
@@ -681,18 +773,18 @@ const getStatusBadgeColor = (estoque) => {
                             </div>
 
                             <!-- Totais e botões -->
-                            <div class="sticky bottom-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 pt-3 mt-3">
-                                <div class="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                            <div class="sticky bottom-0 pt-3 mt-3 bg-white border-t border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+                                <div class="flex items-center justify-between p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20">
                                     <span class="text-sm font-bold text-gray-800 dark:text-white">Total</span>
                                     <span class="text-base font-bold text-blue-600 dark:text-blue-400">{{ formatarMoeda(totalCarrinho) }}</span>
                                 </div>
                                 <div class="flex gap-2 mt-3">
                                     <button @click="produtosAdicionados = []"
-                                            class="flex-1 px-3 py-2 rounded-lg border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-sm">
+                                            class="flex-1 px-3 py-2 text-sm text-red-600 transition-colors border border-red-300 rounded-lg dark:border-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
                                         Limpar
                                     </button>
                                     <button @click="finalizarCompra"
-                                            class="flex-1 px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center justify-center gap-2 text-sm">
+                                            class="flex items-center justify-center flex-1 gap-2 px-3 py-2 text-sm text-white transition-colors bg-blue-600 rounded-lg hover:bg-blue-700">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                                         </svg>
@@ -711,8 +803,9 @@ const getStatusBadgeColor = (estoque) => {
             <div class="comprovativo-wrapper">
                 <div class="comprovativo">
                     <div class="header">
-                        <h1>📄 Comprovativo de Venda</h1>
-                        <p><strong>Loja:</strong> {{ comprovativoData.loja?.Desc || 'N/A' }}</p>
+                        <h1>COMPROVATIVO DE TRANSFERÊNCIA</h1>
+                        <p><strong>Destino:</strong> {{ comprovativoData.loja?.Desc || 'N/A' }}</p>
+                        <p><strong>Origem:</strong> Armazém</p>
                         <p><strong>Data:</strong> {{ comprovativoData.data }} &nbsp;|&nbsp; <strong>Hora:</strong> {{ comprovativoData.hora }}</p>
                     </div>
 
@@ -721,23 +814,25 @@ const getStatusBadgeColor = (estoque) => {
                             <tr>
                                 <th>#</th>
                                 <th>Produto</th>
+                                <th>Categoria</th>
                                 <th>Qtd</th>
-                                <th>Preço Unit.</th>
-                                <th>Subtotal</th>
+                                <th>Preço 1 - Singular</th>
+                                <th>Preço 2 - Empresa</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr v-for="(item, index) in comprovativoData.itens" :key="index">
                                 <td>{{ index + 1 }}</td>
                                 <td>{{ item.nome }}</td>
+                                <td>{{ item.categoria || '-' }}</td>
                                 <td>{{ item.quantidade }}</td>
-                                <td>{{ formatarMoeda(item.preco_unitario) }}</td>
-                                <td>{{ formatarMoeda(item.subtotal) }}</td>
+                                <td>{{ formatarMoeda(item.preco_venda1) }}</td>
+                                <td>{{ formatarMoeda(item.preco_venda2) }}</td>
                             </tr>
                         </tbody>
                         <tfoot>
                             <tr>
-                                <td colspan="4" style="text-align: right; font-weight: bold;">Total</td>
+                                <td colspan="5" style="text-align: right; font-weight: bold;">Total</td>
                                 <td style="font-weight: bold; font-size: 1.2em;">{{ formatarMoeda(comprovativoData.total) }}</td>
                             </tr>
                         </tfoot>
@@ -776,6 +871,11 @@ const getStatusBadgeColor = (estoque) => {
 
 /* ======= ESTILOS PARA IMPRESSÃO ======= */
 @media print {
+    @page {
+        size: A4 portrait;
+        margin: 12mm;
+    }
+
     /* Esconde tudo o que não é a área de impressão */
     body * {
         visibility: hidden;
@@ -803,12 +903,10 @@ const getStatusBadgeColor = (estoque) => {
         min-height: 100vh;
     }
     .comprovativo {
-        max-width: 800px;
+        max-width: 190mm;
         width: 100%;
         background: white;
-        padding: 30px;
-        border: 1px solid #ddd;
-        border-radius: 8px;
+        padding: 10mm;
         font-family: Arial, Helvetica, sans-serif;
         color: #333;
     }
@@ -820,23 +918,23 @@ const getStatusBadgeColor = (estoque) => {
     }
     .comprovativo .header h1 {
         margin: 0 0 10px 0;
-        font-size: 24px;
+        font-size: 22px;
         color: #1a56db;
     }
     .comprovativo .header p {
         margin: 5px 0;
-        font-size: 14px;
+        font-size: 12px;
     }
     .tabela-itens {
         width: 100%;
         border-collapse: collapse;
-        margin: 20px 0;
-        font-size: 14px;
+        margin: 16px 0;
+        font-size: 11px;
     }
     .tabela-itens th,
     .tabela-itens td {
         border: 1px solid #ccc;
-        padding: 8px 10px;
+        padding: 7px 8px;
         text-align: left;
     }
     .tabela-itens th {
@@ -848,7 +946,7 @@ const getStatusBadgeColor = (estoque) => {
         padding: 12px 10px;
     }
     .comprovativo .footer {
-        margin-top: 30px;
+        margin-top: 24px;
         text-align: center;
         border-top: 1px solid #ddd;
         padding-top: 15px;

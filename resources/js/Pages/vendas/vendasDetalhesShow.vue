@@ -103,6 +103,7 @@
 <script setup>
 import { ref, computed } from "vue";
 import { router } from '@inertiajs/vue3';
+import Swal from 'sweetalert2';
 
 const props = defineProps({
   venda: {
@@ -141,23 +142,47 @@ function getProdutoNome(item) {
 }
 
 // Função para reverter venda
-function reverter(id) {
+async function reverter(id) {
   if (!id) {
-    alert('ID da venda não encontrado');
+    await Swal.fire({
+      icon: 'error',
+      title: 'Venda inválida',
+      text: 'ID da venda não encontrado.'
+    });
     return;
   }
 
-  if (confirm('Tem certeza que deseja reverter esta venda? Esta ação não pode ser desfeita.')) {
+  const confirmacao = await Swal.fire({
+    icon: 'warning',
+    title: 'Reverter venda?',
+    text: 'Esta ação não pode ser desfeita.',
+    showCancelButton: true,
+    confirmButtonText: 'Sim, reverter',
+    cancelButtonText: 'Cancelar',
+    confirmButtonColor: '#dc2626'
+  });
+
+  if (confirmacao.isConfirmed) {
     router.get(`/vendas/reverter/vendas/${id}`, {}, {
       onStart: () => console.log('Revertendo venda...'),
       onSuccess: () => {
         console.log('Venda revertida com sucesso!');
-        alert('Venda revertida com sucesso!');
+        Swal.fire({
+          icon: 'success',
+          title: 'Venda revertida',
+          text: 'A venda foi revertida com sucesso.',
+          timer: 2200,
+          showConfirmButton: false
+        });
         router.reload();
       },
       onError: (errors) => {
         console.error('Erros:', errors);
-        alert('Erro ao reverter venda. Verifique o console para mais detalhes.');
+        Swal.fire({
+          icon: 'error',
+          title: 'Erro ao reverter',
+          text: 'Verifique os dados e tente novamente.'
+        });
       },
       onFinish: () => console.log('Processo finalizado'),
     });
@@ -168,7 +193,11 @@ function reverter(id) {
 function imprimirA5() {
   const printContent = document.querySelector('.tablePane');
   if (!printContent) {
-    alert('Conteúdo não encontrado para impressão');
+    Swal.fire({
+      icon: 'error',
+      title: 'Impressão indisponível',
+      text: 'Conteúdo não encontrado para impressão.'
+    });
     return;
   }
 
@@ -192,7 +221,11 @@ function imprimirA5() {
   // Criar janela de impressão A5
   const printWindow = window.open('', '_blank', 'width=420,height=595');
   if (!printWindow) {
-    alert('Por favor, permita pop-ups para imprimir');
+    Swal.fire({
+      icon: 'warning',
+      title: 'Pop-up bloqueado',
+      text: 'Permita pop-ups no navegador para imprimir.'
+    });
     return;
   }
 

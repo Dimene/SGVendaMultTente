@@ -1,9 +1,10 @@
 <script setup>
 import { Head,useForm } from '@inertiajs/vue3'
 
-import { ref, computed, nextTick, watch } from 'vue'
+import { ref, computed, nextTick, watch, onMounted } from 'vue'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import axios from 'axios'
+import Swal from 'sweetalert2'
 
 const emit = defineEmits([
     'compraCriada',
@@ -16,6 +17,10 @@ const emit = defineEmits([
 ]);
 
 const props=defineProps({
+initialPedido: {
+    type: String,
+    default: ''
+},
 resetarForm:{
     type:Number,
     default:0
@@ -58,7 +63,7 @@ const errors = ref({
 });
 
 const form = useForm({
-    Fatura: '',
+    Fatura: props.initialPedido,
     estado: '',
     dataCompra: '',
     tipoCompra: '',
@@ -197,6 +202,42 @@ const hasDespesaError = (index) => {
     return Object.keys(despesaErrors).some(key => despesaErrors[key] !== '');
 };
 
+const handleFieldKeydown = (event) => {
+    const field = event.target;
+    if (!field || !['INPUT', 'TEXTAREA'].includes(field.tagName)) return;
+
+    const isEnter = event.key === 'Enter';
+    const isArrowNavigation = ['ArrowDown', 'ArrowRight', 'ArrowUp', 'ArrowLeft'].includes(event.key);
+
+    if (isEnter && field.tagName !== 'TEXTAREA') {
+        event.preventDefault();
+        submit();
+        return;
+    }
+
+    if (!isArrowNavigation || field.tagName === 'TEXTAREA') return;
+
+    const formElement = field.closest('form');
+    if (!formElement) return;
+
+    const fields = Array.from(
+        formElement.querySelectorAll('input:not([disabled]), textarea:not([disabled]), select:not([disabled])')
+    );
+
+    const currentIndex = fields.indexOf(field);
+    if (currentIndex === -1) return;
+
+    event.preventDefault();
+
+    const nextField = event.key === 'ArrowDown' || event.key === 'ArrowRight'
+        ? fields[currentIndex + 1] || fields[0]
+        : fields[currentIndex - 1] || fields[fields.length - 1];
+
+    if (nextField) {
+        nextField.focus();
+    }
+};
+
 const submit = async () => {
     // Validar antes de submeter
     if (!validarCamposObrigatorios()) {
@@ -251,7 +292,11 @@ console.log("a eminti---",response.data.compra_id);
             }
             // etc...
         }
-        alert('Erro ao salvar a compra. Verifique os dados e tente novamente.');
+        Swal.fire({
+            icon: 'error',
+            title: 'Erro ao salvar compra',
+            text: 'Verifique os dados e tente novamente.'
+        });
     }
 };
 
@@ -375,6 +420,12 @@ emit('compraselecionada', dados.id);
     }
 }
 
+onMounted(() => {
+    if (props.initialPedido) {
+        buscarCompra(props.initialPedido)
+    }
+})
+
 
 
 // Watch para emitir sempre que o total mudar
@@ -391,7 +442,7 @@ watch(totalDespesas, (novoTotal) => {
 
 
         <div class="p-6">
-            <form @submit.prevent="submit">
+            <form @submit.prevent="submit" @keydown="handleFieldKeydown">
             <!-- <input type="number" v-modal="form.fornecedorid"> -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>

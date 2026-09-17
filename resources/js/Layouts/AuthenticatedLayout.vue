@@ -70,7 +70,7 @@ const menuItems = {
             { name: 'Visualizar Compras', route: 'compras.index', icon: '👁️' },
             { name: 'Registrar Compra', route: 'compras.create', icon: '📝' },
             { name: 'Relatórios', route: 'compras.relatorios', icon: '📊' },
-            { name: 'Componentes Compra', route: 'compras.dados', icon: '📊' },
+          
             { name: 'Fornecedores', route: 'compras.fornecedores', icon: '🏢' }
         ]
     },
@@ -289,20 +289,20 @@ const sidebarVisible = computed(() => {
 </script>
 
 <template>
-<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 transition-colors duration-300">
+<div class="min-h-screen transition-colors duration-300 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
 
     <!-- Overlay de Loading Global -->
-    <div v-if="loading" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-2xl flex flex-col items-center space-y-4">
+    <div v-if="loading" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div class="flex flex-col items-center p-8 space-y-4 bg-white shadow-2xl dark:bg-gray-800 rounded-2xl">
             <div class="relative">
-                <div class="w-16 h-16 border-4 border-blue-200 dark:border-blue-800 rounded-full animate-spin border-t-blue-600 dark:border-t-blue-400"></div>
+                <div class="w-16 h-16 border-4 border-blue-200 rounded-full dark:border-blue-800 animate-spin border-t-blue-600 dark:border-t-blue-400"></div>
                 <div class="absolute inset-0 flex items-center justify-center">
                     <svg class="w-6 h-6 text-blue-600 dark:text-blue-400 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                     </svg>
                 </div>
             </div>
-            <p class="text-gray-700 dark:text-gray-300 font-medium">Carregando {{ loadingLink }}...</p>
+            <p class="font-medium text-gray-700 dark:text-gray-300">Carregando {{ loadingLink }}...</p>
         </div>
     </div>
 
@@ -317,17 +317,17 @@ const sidebarVisible = computed(() => {
     >
         <!-- LOGO CENTRAL -->
         <div class="flex items-center justify-center h-20 border-b border-white/10 dark:border-white/5">
-            <Link :href="route('dashboard')" class="flex items-center space-x-2 group" @click="closeMobileMenu">
+            <Link :href="route('dashboard.index')" class="flex items-center space-x-2 group" @click="closeMobileMenu">
                 <div class="relative">
-                    <ApplicationLogo class="h-10 w-auto transition-transform group-hover:scale-105" />
+                    <ApplicationLogo class="w-auto h-10 transition-transform group-hover:scale-105" />
                     <div
-                        v-if="route().current('dashboard')"
-                        class="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse"
+                        v-if="route().current('dashboard.index')"
+                        class="absolute w-3 h-3 bg-green-500 rounded-full -top-1 -right-1 animate-pulse"
                     ></div>
                 </div>
                 <span
                     v-show="sidebarOpen || isMobile"
-                    class="text-white font-bold text-xl bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent"
+                    class="text-xl font-bold text-transparent text-white bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text"
                 >
                     ERP System
                 </span>
@@ -344,11 +344,11 @@ const sidebarVisible = computed(() => {
                 @mouseleave="hideFloatingSubmenu"
             >
                 <button
-                    @click="navigateWithLoading(route('dashboard'), 'Dashboard')"
+                    @click="navigateWithLoading(route('dashboard.index'), 'Dashboard')"
                     class="w-full group flex items-center px-3 py-2.5 rounded-xl transition-all duration-200 hover:bg-white/10 relative"
                     :class="[
                         (sidebarOpen || isMobile) ? 'justify-start' : 'justify-center',
-                        route().current('dashboard') ? 'bg-white/10 text-white' : 'text-gray-300 hover:text-white'
+                        route().current('dashboard.index') ? 'bg-white/10 text-white' : 'text-gray-300 hover:text-white'
                     ]"
                 >
                     <div class="relative flex items-center gap-3">
@@ -361,13 +361,13 @@ const sidebarVisible = computed(() => {
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
                             </svg>
                             <div
-                                v-if="route().current('dashboard')"
+                                v-if="route().current('dashboard.index')"
                                 class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"
                             ></div>
                         </div>
                         <span v-show="sidebarOpen || isMobile" class="text-sm font-medium">Dashboard</span>
                     </div>
-                    <div v-if="!sidebarOpen && !isMobile" class="absolute left-14 bg-slate-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
+                    <div v-if="!sidebarOpen && !isMobile" class="absolute z-50 px-2 py-1 text-xs text-white transition-opacity rounded opacity-0 left-14 bg-slate-700 group-hover:opacity-100 whitespace-nowrap">
                         Dashboard
                     </div>
                 </button>
@@ -403,7 +403,7 @@ const sidebarVisible = computed(() => {
                         </div>
                         <span v-show="sidebarOpen || isMobile" class="text-sm font-medium">Clientes</span>
                     </div>
-                    <div v-if="!sidebarOpen && !isMobile" class="absolute left-14 bg-slate-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
+                    <div v-if="!sidebarOpen && !isMobile" class="absolute z-50 px-2 py-1 text-xs text-white transition-opacity rounded opacity-0 left-14 bg-slate-700 group-hover:opacity-100 whitespace-nowrap">
                         Clientes
                     </div>
                 </button>
@@ -439,7 +439,7 @@ const sidebarVisible = computed(() => {
                         </div>
                         <span v-show="sidebarOpen || isMobile" class="text-sm font-medium">Estoque</span>
                     </div>
-                    <div v-if="!sidebarOpen && !isMobile" class="absolute left-14 bg-slate-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
+                    <div v-if="!sidebarOpen && !isMobile" class="absolute z-50 px-2 py-1 text-xs text-white transition-opacity rounded opacity-0 left-14 bg-slate-700 group-hover:opacity-100 whitespace-nowrap">
                         Estoque
                     </div>
                 </button>
@@ -484,14 +484,14 @@ const sidebarVisible = computed(() => {
                     </svg>
                 </button>
 
-                <div v-if="!sidebarOpen && !isMobile" class="absolute left-14 bg-slate-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
+                <div v-if="!sidebarOpen && !isMobile" class="absolute z-50 px-2 py-1 text-xs text-white transition-opacity rounded opacity-0 left-14 bg-slate-700 group-hover:opacity-100 whitespace-nowrap">
                     Vendas
                 </div>
 
                 <!-- Submenu flutuante -->
                 <div
                     v-if="shouldShowFloating('vendas') && !isMobile"
-                    class="fixed left-20 bg-slate-800 dark:bg-slate-900 rounded-xl shadow-2xl py-2 min-w-48 z-50 border border-white/10 dark:border-white/5"
+                    class="fixed z-50 py-2 border shadow-2xl left-20 bg-slate-800 dark:bg-slate-900 rounded-xl min-w-48 border-white/10 dark:border-white/5"
                     @mouseenter="cancelHide"
                     @mouseleave="hideFloatingSubmenu"
                 >
@@ -514,20 +514,20 @@ const sidebarVisible = computed(() => {
                 <!-- Submenu normal -->
                 <div
                     v-show="(sidebarOpen || isMobile) && openSubmenus.vendas"
-                    class="ml-8 mt-1 space-y-1 border-l border-white/10 dark:border-white/5 pl-3"
+                    class="pl-3 mt-1 ml-8 space-y-1 border-l border-white/10 dark:border-white/5"
                 >
                     <button
                         v-for="item in menuItems.vendas.items"
                         :key="item.route"
                         @click="navigateWithLoading(route(item.route), item.name)"
-                        class="w-full text-left px-3 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 text-sm transition-all relative flex items-center gap-2"
+                        class="relative flex items-center w-full gap-2 px-3 py-2 text-sm text-left text-gray-400 transition-all rounded-lg hover:text-white hover:bg-white/10"
                         :class="{ 'bg-white/5 text-white': route().current(item.route) }"
                     >
                         <span>{{ item.icon }}</span>
                         <span>{{ item.name }}</span>
                         <div
                             v-if="route().current(item.route)"
-                            class="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-4 bg-green-500 rounded-full animate-pulse"
+                            class="absolute left-0 w-1 h-4 transform -translate-y-1/2 bg-green-500 rounded-full top-1/2 animate-pulse"
                         ></div>
                     </button>
                 </div>
@@ -573,14 +573,14 @@ const sidebarVisible = computed(() => {
                     </svg>
                 </button>
 
-                <div v-if="!sidebarOpen && !isMobile" class="absolute left-14 bg-slate-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
+                <div v-if="!sidebarOpen && !isMobile" class="absolute z-50 px-2 py-1 text-xs text-white transition-opacity rounded opacity-0 left-14 bg-slate-700 group-hover:opacity-100 whitespace-nowrap">
                     Compras
                 </div>
 
                 <!-- Submenu flutuante -->
                 <div
                     v-if="shouldShowFloating('compras') && !isMobile"
-                    class="fixed left-20 bg-slate-800 dark:bg-slate-900 rounded-xl shadow-2xl py-2 min-w-48 z-50 border border-white/10 dark:border-white/5"
+                    class="fixed z-50 py-2 border shadow-2xl left-20 bg-slate-800 dark:bg-slate-900 rounded-xl min-w-48 border-white/10 dark:border-white/5"
                     @mouseenter="cancelHide"
                     @mouseleave="hideFloatingSubmenu"
                 >
@@ -603,20 +603,20 @@ const sidebarVisible = computed(() => {
                 <!-- Submenu normal -->
                 <div
                     v-show="(sidebarOpen || isMobile) && openSubmenus.compras"
-                    class="ml-8 mt-1 space-y-1 border-l border-white/10 dark:border-white/5 pl-3"
+                    class="pl-3 mt-1 ml-8 space-y-1 border-l border-white/10 dark:border-white/5"
                 >
                     <button
                         v-for="item in menuItems.compras.items"
                         :key="item.route"
                         @click="navigateWithLoading(route(item.route), item.name)"
-                        class="w-full text-left px-3 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 text-sm transition-all relative flex items-center gap-2"
+                        class="relative flex items-center w-full gap-2 px-3 py-2 text-sm text-left text-gray-400 transition-all rounded-lg hover:text-white hover:bg-white/10"
                         :class="{ 'bg-white/5 text-white': route().current(item.route) }"
                     >
                         <span>{{ item.icon }}</span>
                         <span>{{ item.name }}</span>
                         <div
                             v-if="route().current(item.route)"
-                            class="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-4 bg-green-500 rounded-full animate-pulse"
+                            class="absolute left-0 w-1 h-4 transform -translate-y-1/2 bg-green-500 rounded-full top-1/2 animate-pulse"
                         ></div>
                     </button>
                 </div>
@@ -662,14 +662,14 @@ const sidebarVisible = computed(() => {
                     </svg>
                 </button>
 
-                <div v-if="!sidebarOpen && !isMobile" class="absolute left-14 bg-slate-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
+                <div v-if="!sidebarOpen && !isMobile" class="absolute z-50 px-2 py-1 text-xs text-white transition-opacity rounded opacity-0 left-14 bg-slate-700 group-hover:opacity-100 whitespace-nowrap">
                     Financeiro
                 </div>
 
                 <!-- Submenu flutuante -->
                 <div
                     v-if="shouldShowFloating('financeiro') && !isMobile"
-                    class="fixed left-20 bg-slate-800 dark:bg-slate-900 rounded-xl shadow-2xl py-2 min-w-48 z-50 border border-white/10 dark:border-white/5"
+                    class="fixed z-50 py-2 border shadow-2xl left-20 bg-slate-800 dark:bg-slate-900 rounded-xl min-w-48 border-white/10 dark:border-white/5"
                     @mouseenter="cancelHide"
                     @mouseleave="hideFloatingSubmenu"
                 >
@@ -692,20 +692,20 @@ const sidebarVisible = computed(() => {
                 <!-- Submenu normal -->
                 <div
                     v-show="(sidebarOpen || isMobile) && openSubmenus.financeiro"
-                    class="ml-8 mt-1 space-y-1 border-l border-white/10 dark:border-white/5 pl-3"
+                    class="pl-3 mt-1 ml-8 space-y-1 border-l border-white/10 dark:border-white/5"
                 >
                     <button
                         v-for="item in menuItems.financeiro.items"
                         :key="item.route"
                         @click="navigateWithLoading(route(item.route), item.name)"
-                        class="w-full text-left px-3 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 text-sm transition-all relative flex items-center gap-2"
+                        class="relative flex items-center w-full gap-2 px-3 py-2 text-sm text-left text-gray-400 transition-all rounded-lg hover:text-white hover:bg-white/10"
                         :class="{ 'bg-white/5 text-white': route().current(item.route) }"
                     >
                         <span>{{ item.icon }}</span>
                         <span>{{ item.name }}</span>
                         <div
                             v-if="route().current(item.route)"
-                            class="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-4 bg-green-500 rounded-full animate-pulse"
+                            class="absolute left-0 w-1 h-4 transform -translate-y-1/2 bg-green-500 rounded-full top-1/2 animate-pulse"
                         ></div>
                     </button>
                 </div>
@@ -752,14 +752,14 @@ const sidebarVisible = computed(() => {
                     </svg>
                 </button>
 
-                <div v-if="!sidebarOpen && !isMobile" class="absolute left-14 bg-slate-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
+                <div v-if="!sidebarOpen && !isMobile" class="absolute z-50 px-2 py-1 text-xs text-white transition-opacity rounded opacity-0 left-14 bg-slate-700 group-hover:opacity-100 whitespace-nowrap">
                     Configurações
                 </div>
 
                 <!-- Submenu flutuante -->
                 <div
                     v-if="shouldShowFloating('configuracoes') && !isMobile"
-                    class="fixed left-20 bg-slate-800 dark:bg-slate-900 rounded-xl shadow-2xl py-2 min-w-48 z-50 border border-white/10 dark:border-white/5"
+                    class="fixed z-50 py-2 border shadow-2xl left-20 bg-slate-800 dark:bg-slate-900 rounded-xl min-w-48 border-white/10 dark:border-white/5"
                     @mouseenter="cancelHide"
                     @mouseleave="hideFloatingSubmenu"
                 >
@@ -782,20 +782,20 @@ const sidebarVisible = computed(() => {
                 <!-- Submenu normal -->
                 <div
                     v-show="(sidebarOpen || isMobile) && openSubmenus.configuracoes"
-                    class="ml-8 mt-1 space-y-1 border-l border-white/10 dark:border-white/5 pl-3"
+                    class="pl-3 mt-1 ml-8 space-y-1 border-l border-white/10 dark:border-white/5"
                 >
                     <button
                         v-for="item in menuItems.configuracoes.items"
                         :key="item.route"
                         @click="navigateWithLoading(route(item.route), item.name)"
-                        class="w-full text-left px-3 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 text-sm transition-all relative flex items-center gap-2"
+                        class="relative flex items-center w-full gap-2 px-3 py-2 text-sm text-left text-gray-400 transition-all rounded-lg hover:text-white hover:bg-white/10"
                         :class="{ 'bg-white/5 text-white': route().current(item.route) }"
                     >
                         <span>{{ item.icon }}</span>
                         <span>{{ item.name }}</span>
                         <div
                             v-if="route().current(item.route)"
-                            class="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-4 bg-green-500 rounded-full animate-pulse"
+                            class="absolute left-0 w-1 h-4 transform -translate-y-1/2 bg-green-500 rounded-full top-1/2 animate-pulse"
                         ></div>
                     </button>
                 </div>
@@ -815,16 +815,16 @@ const sidebarVisible = computed(() => {
     >
 
         <!-- TOP BAR MODERNO -->
-        <header class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md shadow-lg sticky top-0 z-20 border-b border-gray-200/50 dark:border-gray-700/50 transition-colors duration-300">
+        <header class="sticky top-0 z-20 transition-colors duration-300 border-b shadow-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-gray-200/50 dark:border-gray-700/50">
             <div class="flex items-center justify-between h-16 px-4">
 
                 <!-- Botão toggle sidebar -->
                 <button
                     @click="toggleSidebar"
-                    class="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 focus:outline-none group"
+                    class="p-2 text-gray-600 transition-all duration-200 rounded-lg dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none group"
                     :title="(isMobile ? mobileMenuOpen : sidebarOpen) ? 'Fechar menu' : 'Abrir menu'"
                 >
-                    <div class="relative w-6 h-6 flex items-center justify-center">
+                    <div class="relative flex items-center justify-center w-6 h-6">
                         <div class="absolute inset-0 flex flex-col items-center justify-center gap-1.5 transition-all duration-300">
                             <span
                                 class="block h-0.5 bg-gray-600 dark:bg-gray-300 transition-all duration-300 origin-center"
@@ -849,7 +849,7 @@ const sidebarVisible = computed(() => {
                 </button>
 
                 <!-- Título da página -->
-                <div class="text-gray-800 dark:text-gray-200 font-semibold text-lg hidden md:block">
+                <div class="hidden text-lg font-semibold text-gray-800 dark:text-gray-200 md:block">
                     <slot name="header"></slot>
                 </div>
 
@@ -859,7 +859,7 @@ const sidebarVisible = computed(() => {
                     <!-- Botão Dark Mode -->
                     <button
                         @click="toggleDark"
-                        class="relative p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all group"
+                        class="relative p-2 text-gray-600 transition-all rounded-lg dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 group"
                         :title="darkMode ? 'Modo Claro' : 'Modo Escuro'"
                     >
                         <svg v-if="darkMode" class="w-5 h-5 text-yellow-400 group-hover:animate-spin" fill="currentColor" viewBox="0 0 20 20">
@@ -871,12 +871,12 @@ const sidebarVisible = computed(() => {
                     </button>
 
                     <!-- Notificações -->
-                    <button class="relative p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all group">
+                    <button class="relative p-2 text-gray-600 transition-all rounded-lg dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 group">
                         <svg class="w-5 h-5 group-hover:animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
                         </svg>
-                        <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-ping"></span>
-                        <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                        <span class="absolute w-2 h-2 bg-red-500 rounded-full top-1 right-1 animate-ping"></span>
+                        <span class="absolute w-2 h-2 bg-red-500 rounded-full top-1 right-1"></span>
                     </button>
 
                     <!-- Dropdown do usuário -->
@@ -884,13 +884,13 @@ const sidebarVisible = computed(() => {
                         <template #trigger>
                             <button class="flex items-center space-x-3 text-sm text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white focus:outline-none group">
                                 <div class="relative">
-                                    <div class="w-9 h-9 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold">
+                                    <div class="flex items-center justify-center font-bold text-white rounded-full w-9 h-9 bg-gradient-to-r from-blue-500 to-purple-600">
                                         {{ $page.props.auth.user.name.charAt(0).toUpperCase() }}
                                     </div>
                                     <div class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 animate-pulse"></div>
                                 </div>
-                                <span class="hidden md:inline-block font-medium">{{ $page.props.auth.user.name }}</span>
-                                <svg class="w-4 h-4 text-gray-400 group-hover:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <span class="hidden font-medium md:inline-block">{{ $page.props.auth.user.name }}</span>
+                                <svg class="w-4 h-4 text-gray-400 transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                                 </svg>
                             </button>
@@ -927,7 +927,7 @@ const sidebarVisible = computed(() => {
         </main>
 
         <!-- Footer -->
-        <footer class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-t border-gray-200 dark:border-gray-700 py-4 px-6 text-center text-sm text-gray-500 dark:text-gray-400 transition-colors duration-300">
+        <footer class="px-6 py-4 text-sm text-center text-gray-500 transition-colors duration-300 border-t border-gray-200 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm dark:border-gray-700 dark:text-gray-400">
             © {{ new Date().getFullYear() }} ERP System. Todos os direitos reservados.
         </footer>
 
@@ -937,7 +937,7 @@ const sidebarVisible = computed(() => {
     <div
         v-if="mobileMenuOpen && isMobile"
         @click="closeMobileMenu"
-        class="fixed inset-0 bg-black/50 z-20"
+        class="fixed inset-0 z-20 bg-black/50"
     ></div>
 
 </div>

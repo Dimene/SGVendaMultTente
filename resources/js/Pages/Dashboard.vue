@@ -1,6 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue';
 import Swal from 'sweetalert2';
 import VueApexCharts from 'vue3-apexcharts';
@@ -17,6 +17,17 @@ const props = defineProps({
     viasdepagamento: {
         type: Array,
         default: () => []
+    },
+    vendashoje:{
+        type:Array,
+        default:()=>[]
+    }, vendasmes:{
+        type:Array,
+        default:()=>[]
+    },
+    dashboardData: {
+        type: Object,
+        default: () => ({})
     }
 });
 
@@ -29,6 +40,9 @@ const darkMode = ref(false);
 const periodoSelecionado = ref('mes');
 const dataAtualizacao = ref(new Date());
 let intervaloAtualizacao = null;
+let themeObserver = null;
+
+
 
 // ======================================================
 // DADOS DO DASHBOARD
@@ -39,43 +53,43 @@ const dashboard = reactive({
     kpis: {
         vendasHoje: {
             titulo: 'Vendas Hoje',
-            valor: 52500,
-            crescimento: 12.5,
+            valor: 0,
+            crescimento:0,
             icon: 'fa-cart-shopping',
             cor: 'from-blue-500 to-blue-600'
         },
         vendasMes: {
             titulo: 'Vendas do Mês',
-            valor: 1850000,
-            crescimento: 18.4,
+            valor: 0,
+            crescimento: 0,
             icon: 'fa-chart-line',
             cor: 'from-green-500 to-green-600'
         },
         lucro: {
             titulo: 'Lucro Total',
-            valor: 650000,
-            crescimento: 15.2,
+            valor: 0,
+            crescimento:0,
             icon: 'fa-money-bill-trend-up',
             cor: 'from-emerald-500 to-emerald-600'
         },
         iva: {
             titulo: 'IVA Recolhido',
-            valor: 148000,
-            crescimento: 8.7,
+            valor: 0,
+            crescimento:0,
             icon: 'fa-file-invoice',
             cor: 'from-purple-500 to-purple-600'
         },
         caixa: {
             titulo: 'Saldo em Caixa',
-            valor: 320000,
-            crescimento: 5.5,
+            valor: 0,
+            crescimento:0,
             icon: 'fa-cash-register',
             cor: 'from-yellow-500 to-yellow-600'
         },
         produtos: {
             titulo: 'Produtos em Stock',
-            valor: 856,
-            crescimento: -3.2,
+            valor:0,
+            crescimento:0,
             icon: 'fa-boxes-stacked',
             cor: 'from-red-500 to-red-600'
         }
@@ -137,7 +151,11 @@ const dashboard = reactive({
 // COMPUTED
 // ======================================================
 
+
+
 const totalVendas = computed(() => {
+  
+
     return dashboard.kpis.vendasMes.valor;
 });
 
@@ -150,6 +168,7 @@ const crescimentoMedio = computed(() => {
     const soma = valores.reduce((acc, kpi) => acc + kpi.crescimento, 0);
     return (soma / valores.length).toFixed(1);
 });
+
 
 // ======================================================
 // CONFIGURAÇÕES APEXCHARTS
@@ -337,10 +356,41 @@ function moeda(valor) {
     }).format(valor);
 }
 
+function aplicarDadosReais(dados) {
+    if (!dados || !Object.keys(dados).length) return;
+
+    const cores = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
+    const aplicarKpi = (nome, valor, crescimento = 0) => {
+        dashboard.kpis[nome].valor = Number(valor || 0);
+        dashboard.kpis[nome].crescimento = Number(crescimento || 0);
+    };
+
+    aplicarKpi('vendasHoje', dados.vendasHoje);
+    aplicarKpi('vendasMes', dados.vendasMes, dados.crescimentoMes);
+    aplicarKpi('lucro', dados.lucro);
+    aplicarKpi('iva', dados.iva);
+    aplicarKpi('caixa', dados.caixa);
+    aplicarKpi('produtos', dados.produtosEmStock);
+
+    dashboard.vendasMensais = dados.vendasMensais || [];
+    dashboard.vendasSemana = dados.vendasSemana || [];
+    dashboard.categorias = (dados.categorias || []).map((item, index) => ({
+        ...item,
+        cor: item.cor || cores[index % cores.length]
+    }));
+    dashboard.pagamentos = (dados.pagamentos || []).map((item, index) => ({
+        ...item,
+        cor: item.cor || cores[index % cores.length]
+    }));
+    dashboard.ultimasVendas = dados.ultimasVendas || [];
+    dashboard.produtosBaixoStock = dados.produtosBaixoStock || [];
+    dashboard.clientesTop = dados.clientesTop || [];
+}
+
+watch(() => props.dashboardData, aplicarDadosReais, { immediate: true, deep: true });
+
 function toggleDark() {
-    darkMode.value = !darkMode.value;
-    document.documentElement.classList.toggle('dark', darkMode.value);
-    localStorage.setItem('darkMode', darkMode.value);
+    darkMode.value = document.documentElement.classList.contains('dark');
 }
 
 function getStatusClass(estado) {
@@ -371,39 +421,23 @@ function getStockColor(quantidade, minimo) {
 async function carregarDados() {
     isLoading.value = true;
 
-    try {
-        // Simular chamada API
-        await new Promise(resolve => setTimeout(resolve, 800));
-
-        // Atualizar dados com valores aleatórios para simular tempo real
-        const variacao = (Math.random() - 0.5) * 1000;
-        dashboard.kpis.vendasHoje.valor += variacao;
-        dashboard.kpis.vendasHoje.crescimento += (Math.random() - 0.5) * 2;
-
-        dataAtualizacao.value = new Date();
-
-        // Notificação de atualização
-        Swal.fire({
-            icon: 'success',
-            title: 'Dados Atualizados!',
-            text: 'Os dados do dashboard foram atualizados com sucesso.',
-            toast: true,
-            position: 'top-end',
-            showConfirmButton: false,
-            timer: 2000,
-            timerProgressBar: true
-        });
-
-    } catch (error) {
-        console.error('Erro ao carregar dados:', error);
-        Swal.fire({
-            icon: 'error',
-            title: 'Erro',
-            text: 'Falha ao carregar os dados do dashboard.'
-        });
-    } finally {
-        isLoading.value = false;
-    }
+    router.reload({
+        only: ['dashboardData'],
+        preserveScroll: true,
+        onSuccess: () => {
+            dataAtualizacao.value = new Date();
+            Swal.fire({
+                icon: 'success',
+                title: 'Dados atualizados',
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 1800
+            });
+        },
+        onError: () => Swal.fire('Erro', 'Falha ao carregar o dashboard.', 'error'),
+        onFinish: () => { isLoading.value = false; }
+    });
 }
 
 // ======================================================
@@ -411,29 +445,7 @@ async function carregarDados() {
 // ======================================================
 
 function iniciarAtualizacaoTempoReal() {
-    intervaloAtualizacao = setInterval(() => {
-        // Atualizar apenas se não estiver carregando
-        if (!isLoading.value) {
-            const variacao = (Math.random() - 0.5) * 500;
-            dashboard.kpis.vendasHoje.valor += variacao;
-
-            // Adicionar nova venda simulada
-            const clientes = ['João Ernesto', 'Maria Santos', 'Carlos Lima', 'Beatriz Oliveira', 'Pedro Silva'];
-            const valores = [2500, 3800, 4200, 5600, 7100];
-
-            dashboard.ultimasVendas.unshift({
-                fatura: `FT${String(Date.now()).slice(-6)}`,
-                cliente: clientes[Math.floor(Math.random() * clientes.length)],
-                valor: valores[Math.floor(Math.random() * valores.length)],
-                estado: Math.random() > 0.3 ? 'Pago' : 'Pendente',
-                data: new Date().toLocaleString('pt-MZ')
-            });
-
-            if (dashboard.ultimasVendas.length > 10) {
-                dashboard.ultimasVendas.pop();
-            }
-        }
-    }, 30000); // A cada 30 segundos
+    intervaloAtualizacao = null;
 }
 
 // ======================================================
@@ -441,21 +453,21 @@ function iniciarAtualizacaoTempoReal() {
 // ======================================================
 
 onMounted(() => {
-    // Restaurar tema
-    const savedTheme = localStorage.getItem('darkMode');
-    if (savedTheme === 'true') {
-        darkMode.value = true;
-        document.documentElement.classList.add('dark');
-    }
+    darkMode.value = document.documentElement.classList.contains('dark');
+    themeObserver = new MutationObserver(toggleDark);
+    themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class']
+    });
 
     carregarDados();
-    iniciarAtualizacaoTempoReal();
 });
 
 onUnmounted(() => {
     if (intervaloAtualizacao) {
         clearInterval(intervaloAtualizacao);
     }
+    themeObserver?.disconnect();
 });
 
 // ======================================================
@@ -472,9 +484,9 @@ watch(darkMode, (novo) => {
 
     <AuthenticatedLayout>
         <template #header>
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div class="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
                 <div>
-                    <h2 class="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                    <h2 class="flex items-center gap-2 text-2xl font-bold text-gray-800 dark:text-white">
                         📊 Dashboard de Vendas
                         <span class="text-sm font-normal text-gray-500 dark:text-gray-400">
                             {{ dataAtualizacao.toLocaleTimeString('pt-MZ') }}
@@ -485,18 +497,10 @@ watch(darkMode, (novo) => {
                     </p>
                 </div>
 
-                <div class="flex gap-3 flex-wrap">
-                    <button
-                        @click="toggleDark"
-                        class="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200"
-                    >
-                        <i :class="darkMode ? 'fas fa-sun text-yellow-400' : 'fas fa-moon'"></i>
-                        {{ darkMode ? 'Claro' : 'Escuro' }}
-                    </button>
-
+                <div class="flex flex-wrap gap-3">
                     <button
                         @click="carregarDados"
-                        class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200 flex items-center gap-2"
+                        class="flex items-center gap-2 px-4 py-2 text-white transition-all duration-200 bg-blue-600 rounded-lg hover:bg-blue-700"
                         :disabled="isLoading"
                     >
                         <i class="fas fa-sync-alt" :class="{'animate-spin': isLoading}"></i>
@@ -507,42 +511,42 @@ watch(darkMode, (novo) => {
         </template>
 
         <div class="py-6">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
                 <!-- LOADING -->
                 <div
                     v-if="isLoading"
-                    class="h-96 flex flex-col justify-center items-center gap-2"
+                    class="flex flex-col items-center justify-center gap-2 h-96"
                 >
-                    <div class="animate-spin rounded-full h-16 w-16 border-4 border-blue-600 border-t-transparent"></div>
+                    <div class="w-16 h-16 border-4 border-blue-600 rounded-full animate-spin border-t-transparent"></div>
                     <p class="text-gray-500 dark:text-gray-400">Carregando dados...</p>
                 </div>
 
                 <div v-else class="space-y-6">
                     <!-- ================= KPI CARDS ================= -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-2">
+                    <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
                         <div
                             v-for="(kpi, key) in dashboard.kpis"
                             :key="key"
-                            class="bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 p-5"
+                            class="p-5 transition-all duration-300 transform bg-white shadow-lg dark:bg-gray-800 rounded-xl hover:shadow-xl hover:-translate-y-1"
                         >
-                            <div class="flex justify-between items-start">
+                            <div class="flex items-start justify-between">
                                 <div class="flex-1">
-                                    <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">
+                                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
                                         {{ kpi.titulo }}
                                     </p>
-                                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mt-2">
+                                    <h3 class="mt-2 text-xl font-bold text-gray-900 dark:text-white">
                                         {{ moeda(kpi.valor) }}
                                     </h3>
                                     <p
                                         :class="kpi.crescimento >= 0 ? 'text-green-500' : 'text-red-500'"
-                                        class="text-sm font-semibold mt-2"
+                                        class="mt-2 text-sm font-semibold"
                                     >
                                         <i
                                             :class="kpi.crescimento >= 0 ? 'fas fa-arrow-up' : 'fas fa-arrow-down'"
                                             class="mr-1"
                                         ></i>
                                         {{ Math.abs(kpi.crescimento) }}%
-                                        <span class="text-gray-400 font-normal">vs mês anterior</span>
+                                        <span class="font-normal text-gray-400">vs mês anterior</span>
                                     </p>
                                 </div>
 
@@ -559,16 +563,16 @@ watch(darkMode, (novo) => {
                     </div>
 
                     <!-- ================= GRÁFICOS LINHA / BARRA ================= -->
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
                         <!-- VENDAS MENSAIS -->
-                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5">
-                            <div class="flex justify-between items-center mb-4">
+                        <div class="p-5 bg-white shadow-lg dark:bg-gray-800 rounded-xl">
+                            <div class="flex items-center justify-between mb-4">
                                 <h3 class="font-bold text-gray-900 dark:text-white">
                                     📈 Evolução das Vendas
                                 </h3>
                                 <select
                                     v-model="periodoSelecionado"
-                                    class="text-sm border rounded-lg px-3 py-1 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                    class="px-3 py-1 text-sm border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                                 >
                                     <option value="mes">Último mês</option>
                                     <option value="trimestre">Último trimestre</option>
@@ -584,8 +588,8 @@ watch(darkMode, (novo) => {
                         </div>
 
                         <!-- VENDAS SEMANA -->
-                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5">
-                            <h3 class="font-bold text-gray-900 dark:text-white mb-4">
+                        <div class="p-5 bg-white shadow-lg dark:bg-gray-800 rounded-xl">
+                            <h3 class="mb-4 font-bold text-gray-900 dark:text-white">
                                 📊 Vendas da Semana
                             </h3>
                             <VueApexCharts
@@ -598,10 +602,10 @@ watch(darkMode, (novo) => {
                     </div>
 
                     <!-- ================= DONUT + PIE ================= -->
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
                         <!-- CATEGORIAS -->
-                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5">
-                            <h3 class="font-bold text-gray-900 dark:text-white mb-4">
+                        <div class="p-5 bg-white shadow-lg dark:bg-gray-800 rounded-xl">
+                            <h3 class="mb-4 font-bold text-gray-900 dark:text-white">
                                 🥧 Vendas por Categoria
                             </h3>
                             <VueApexCharts
@@ -613,8 +617,8 @@ watch(darkMode, (novo) => {
                         </div>
 
                         <!-- PAGAMENTOS -->
-                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5">
-                            <h3 class="font-bold text-gray-900 dark:text-white mb-4">
+                        <div class="p-5 bg-white shadow-lg dark:bg-gray-800 rounded-xl">
+                            <h3 class="mb-4 font-bold text-gray-900 dark:text-white">
                                 💳 Formas de Pagamento
                             </h3>
                             <VueApexCharts
@@ -627,8 +631,8 @@ watch(darkMode, (novo) => {
                     </div>
 
                     <!-- ================= ÚLTIMAS VENDAS ================= -->
-                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5 overflow-hidden">
-                        <div class="flex justify-between items-center mb-4">
+                    <div class="p-5 overflow-hidden bg-white shadow-lg dark:bg-gray-800 rounded-xl">
+                        <div class="flex items-center justify-between mb-4">
                             <h3 class="font-bold text-gray-900 dark:text-white">
                                 🧾 Últimas Vendas
                             </h3>
@@ -640,7 +644,7 @@ watch(darkMode, (novo) => {
                         <div class="overflow-x-auto">
                             <table class="w-full">
                                 <thead>
-                                    <tr class="text-left text-sm text-gray-500 dark:text-gray-400 border-b dark:border-gray-700">
+                                    <tr class="text-sm text-left text-gray-500 border-b dark:text-gray-400 dark:border-gray-700">
                                         <th class="pb-3">Fatura</th>
                                         <th class="pb-3">Cliente</th>
                                         <th class="pb-3">Data</th>
@@ -652,7 +656,7 @@ watch(darkMode, (novo) => {
                                     <tr
                                         v-for="venda in dashboard.ultimasVendas.slice(0, 5)"
                                         :key="venda.fatura"
-                                        class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                                        class="transition-colors border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50"
                                     >
                                         <td class="py-3 font-medium text-gray-900 dark:text-white">
                                             {{ venda.fatura }}
@@ -660,16 +664,16 @@ watch(darkMode, (novo) => {
                                         <td class="py-3 text-gray-700 dark:text-gray-300">
                                             {{ venda.cliente }}
                                         </td>
-                                        <td class="py-3 text-gray-500 dark:text-gray-400 text-sm">
+                                        <td class="py-3 text-sm text-gray-500 dark:text-gray-400">
                                             {{ venda.data }}
                                         </td>
-                                        <td class="py-3 text-right font-bold text-gray-900 dark:text-white">
+                                        <td class="py-3 font-bold text-right text-gray-900 dark:text-white">
                                             {{ moeda(venda.valor) }}
                                         </td>
                                         <td class="py-3 text-center">
                                             <span
                                                 :class="getStatusClass(venda.estado)"
-                                                class="px-3 py-1 rounded-full text-xs font-medium"
+                                                class="px-3 py-1 text-xs font-medium rounded-full"
                                             >
                                                 {{ venda.estado }}
                                             </span>
@@ -681,17 +685,17 @@ watch(darkMode, (novo) => {
                     </div>
 
                     <!-- ================= ESTOQUE + CLIENTES ================= -->
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
                         <!-- ESTOQUE -->
-                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5">
-                            <h3 class="font-bold text-gray-900 dark:text-white mb-4">
+                        <div class="p-5 bg-white shadow-lg dark:bg-gray-800 rounded-xl">
+                            <h3 class="mb-4 font-bold text-gray-900 dark:text-white">
                                 ⚠️ Produtos com Baixo Estoque
                             </h3>
                             <div class="space-y-3">
                                 <div
                                     v-for="produto in dashboard.produtosBaixoStock"
                                     :key="produto.produto"
-                                    class="flex justify-between items-center p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                    class="flex items-center justify-between p-3 transition-colors rounded-lg bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700"
                                 >
                                     <div>
                                         <p class="font-medium text-gray-900 dark:text-white">
@@ -720,15 +724,15 @@ watch(darkMode, (novo) => {
                         </div>
 
                         <!-- TOP CLIENTES -->
-                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5">
-                            <h3 class="font-bold text-gray-900 dark:text-white mb-4">
+                        <div class="p-5 bg-white shadow-lg dark:bg-gray-800 rounded-xl">
+                            <h3 class="mb-4 font-bold text-gray-900 dark:text-white">
                                 🏆 Melhores Clientes
                             </h3>
                             <div class="space-y-3">
                                 <div
                                     v-for="(cliente, index) in dashboard.clientesTop.slice(0, 5)"
                                     :key="cliente.nome"
-                                    class="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                    class="flex items-center justify-between p-3 transition-colors rounded-lg bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700"
                                 >
                                     <div class="flex items-center gap-3">
                                         <div
@@ -760,9 +764,9 @@ watch(darkMode, (novo) => {
                     </div>
 
                     <!-- ================= FOOTER ================= -->
-                    <div class="text-center text-sm text-gray-500 dark:text-gray-400 py-4 border-t dark:border-gray-700">
+                    <div class="py-4 text-sm text-center text-gray-500 border-t dark:text-gray-400 dark:border-gray-700">
                         <p>
-                            <i class="fas fa-sync-alt text-blue-500 animate-spin" style="animation-duration: 3s;"></i>
+                            <i class="text-blue-500 fas fa-sync-alt animate-spin" style="animation-duration: 3s;"></i>
                             Dados atualizados em tempo real • Última atualização: {{ dataAtualizacao.toLocaleString('pt-MZ') }}
                         </p>
                         <p class="mt-1">

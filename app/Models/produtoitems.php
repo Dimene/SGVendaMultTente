@@ -11,7 +11,8 @@ class produtoitems extends Model
         'produto_id',
         'preco_compra',
         'iva',
-        'preco_venda',
+        'preco_venda1',
+        'preco_venda2',
         'estoque',
         'desconto',
         'compra_id',
@@ -22,7 +23,9 @@ class produtoitems extends Model
     public function produtoatributos(){
         return $this->hasOne(produtos_atributos::class,'produto_item_id','id');
     }
-
+  public function produtoloja(){
+        return $this->hasOne(loja::class,'produtoitem_id','id');
+    }
     public function produto(){
         return $this->hasOne(produto::class,'id','produto_id');
 

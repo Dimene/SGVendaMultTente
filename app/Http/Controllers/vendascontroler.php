@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Armazem;
+use App\Models\Cliente;
 use App\Models\gruposItem;
 use App\Models\loja;
 use App\Models\loja_desc;
@@ -39,6 +40,8 @@ class vendascontroler extends Controller
 $collec=collect();
 
 $viaspagamentos=ViaPagamento::all();
+
+// dd($vendas);
 foreach($vendas as $item){
 
 $collec->push((object)
@@ -75,21 +78,24 @@ return  Inertia::render('vendas/vendasIndex',[
    public function create()
 {
 
+$item=collect(loja::pluck("produtoitem_id")->toArray());
 
-    $item=produtoitems::where('estoque','>',0)->with(['produto.categoria','outrosatributos'])->get();
 
-    // dd($item);
+$item=produtoitems::whereIn('id',$item)->with(['produto.categoria','outrosatributos','produtoloja.loja'])->get();
+
+ 
 $tabela_ivas=tabela_ivas::all();
 
 $viaspagamentos=ViaPagamento::all();
 
-// dd($viaspagamentos);
 
-
+$clientes=Cliente::all();
+//  dd($item,$clientes,);
     return Inertia::render('vendas/vendasCreate', [
         'grupo'=>$item,
         'tabela_ivas'=>$tabela_ivas,
         'viaspagamentos'=>$viaspagamentos,
+        'clientes'=>$clientes,
     ]);
 }
 
@@ -101,16 +107,9 @@ $viaspagamentos=ViaPagamento::all();
         //
 
 
-        //  dd($request->all());
-$usuario=auth()->user()->id;
-    foreach($request->itens as $item){
-      $itemget=  produtoitems::where("id",$item['produto_id'])->first();
-
-      produtoitems::where("id",$item['produto_id'])->update(['estoque'=>($itemget->estoque-$item['quantidade'])]);
-
-
-$vendasTotal=vendas::
-whereMonth("created_at",Carbon::now()->format('m'))
+        //   dd($request->all());
+        
+$vendasTotal=vendas::whereMonth("created_at",Carbon::now()->format('m'))
 ->whereYear("created_at",Carbon::now()->format('Y'))->max('reiboNr');
 
 if($vendasTotal==0){
@@ -124,11 +123,12 @@ else{
 $TlaoNunero = str_pad($vendasTotal, 4, '0', STR_PAD_LEFT);
 $fatura=Carbon::now()->format('Ym').''.$TlaoNunero;
 
-// dd($fatura,$vendasTotal);
-
- $idvendas=   vendas::create(['via_pagamento_id'=>$request["via_pagamento_id"],
+$usuario=auth()->user()->id;
+         $idvendas=   vendas::create(['via_pagamento_id'=>$request["via_pagamento_id"],
         'valor_pago'=>$request["valor_pago"],
         'troco'=>$request["troco"],
+        'cliente_id'=>$request["cliente_id"],
+
 
         'usario_id'=>$usuario,
         'referencia'=>$request["referencia"],
@@ -136,12 +136,23 @@ $fatura=Carbon::now()->format('Ym').''.$TlaoNunero;
         'total'=>$request['total']
         ]);
 
+    foreach($request->itens as $item){
+    //   $itemget=  produtoitems::where("id",$item['produto_id'])->first();
+// dd($item);
 
+ $idprodutoloaj=$item["loja"]["id"];
+//  $idprodutoloaj=$item["loja"]["loja_id"];
 
-        foreach($request->itens as $item){
+// dd($idprodutoloaj);
+
+ $quantidade=$item["loja"]["Quantidade"]-$item["quantidade"];
+ loja::where("id",$idprodutoloaj)
+ ->update(["Quantidade"=> $quantidade]);
+// dd($item["loja"]);
+       
             VendaItem::create([
                 'venda_id'=>$idvendas->id,
-        'produto_id'=>$item['produto_id'],
+        'produto_id'=>$item["loja"]['produtoitem_id'],
         'quantidade'=>$item['quantidade'],
         'preco_unitario'=>$item['preco_unitario'],
         'desconto'=>$item['desconto'],
@@ -150,11 +161,7 @@ $fatura=Carbon::now()->format('Ym').''.$TlaoNunero;
 
             ]);
 
-        }
-
-
-
-
+        
     }
     }
 
@@ -210,7 +217,16 @@ $fatura=Carbon::now()->format('Ym').''.$TlaoNunero;
     {
 
 
-$dados=vendas::where("id",$id)->get();
+$dados=vendas::where("id",$id)->with('itens.produtoloja')->first();
+foreach($dados->itens as $item){
+    $quatidade=$item->produtoloja->Quantidade+$item->quantidade;
+    loja::where("id",$item->produtoloja->id)->update(["Quantidade"=>$quatidade]);
+}
+vendaitem::where("venda_id",$id)->delete();
+vendas::where("id",$id)->delete();
+
+
+redirect()->route('vendas.index')->with('success', 'Venda revertida com sucesso.');
 
 
     }
@@ -376,8 +392,8 @@ public function addicionarlojas(Request $request)
                 $colecaoDados->push(['nome'=>$produto->produto->nome,
                 "categoria"=>$produto->produto->categoria->nome,
                 "Quantidade"=>$quantidadeTransferir,
-                "precoVenda"=>$Item->preco_unitario,
-                "precoVetaTotal"=>$Item->preco_unitario*$Item->preco_unitario,
+                "precoVenda1"=>$Item->preco_venda1 ?? $produto->preco_venda1 ?? 0,
+                "precoVenda2"=>$Item->preco_venda2 ?? $produto->preco_venda2 ?? 0,
 
                 ]);
 

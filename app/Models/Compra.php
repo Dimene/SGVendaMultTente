@@ -43,5 +43,9 @@ class Compra extends Model
         return $this->hasMany(produtoitems::class,'compra_id','id');
     }
 
+    public function fornecedor(){
+        return $this->hasOne(Fornecedor::class,'id','fornecedor_id');
+    }
+
 
 }

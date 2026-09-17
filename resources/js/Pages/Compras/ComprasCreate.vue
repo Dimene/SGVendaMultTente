@@ -11,6 +11,10 @@ import Swal from 'sweetalert2'
 // ==================== PROPS ====================
 const props = defineProps({
     compras: Array,
+    initialPedido: {
+        type: String,
+        default: ''
+    },
     categoria: Array,
     armazem: Array,
     fornecedor: Array,
@@ -173,9 +177,9 @@ onMounted(() => {
 
     <AuthenticatedLayout>
          <template #header>
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div class="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
                 <div>
-                    <h2 class="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                    <h2 class="flex items-center gap-2 text-2xl font-bold text-gray-800 dark:text-white">
                         📊 Vendas Diarias
                         <span class="text-sm font-normal text-gray-500 dark:text-gray-400">
                             <!-- {{ dataAtualizacao.toLocaleTimeString('pt-MZ') }} -->
@@ -187,18 +191,10 @@ onMounted(() => {
                     </p>
                 </div>
 
-                <div class="flex gap-3 flex-wrap">
-                    <button
-                        @click="toggleDark"
-                        class="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200"
-                    >
-                        <i :class="darkMode ? 'fas fa-sun text-yellow-400' : 'fas fa-moon'"></i>
-                        {{ darkMode ? 'Claro' : 'Escuro' }}
-                    </button>
-
+                <div class="flex flex-wrap gap-3">
                     <button
                         @click="carregarDados"
-                        class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200 flex items-center gap-2"
+                        class="flex items-center gap-2 px-4 py-2 text-white transition-all duration-200 bg-blue-600 rounded-lg hover:bg-blue-700"
                         :disabled="isLoading"
                     >
                         <i class="fas fa-sync-alt" :class="{'animate-spin': isLoading}"></i>
@@ -210,7 +206,7 @@ onMounted(() => {
 
 
 
-<div class="flex items-start p-4 gap-4 bg-white w-full">
+<div class="flex items-start w-full gap-4 p-4 bg-white">
     <div class="flex-1">
         <select
             v-model="fornecedorID"
@@ -234,7 +230,7 @@ onMounted(() => {
             v-if="errors.fornecedor"
             class="mt-1 text-sm text-red-500"
         >
-            <i class="fas fa-exclamation-circle mr-1"></i>
+            <i class="mr-1 fas fa-exclamation-circle"></i>
             {{ errors.fornecedor }}
         </p>
     </div>
@@ -244,7 +240,7 @@ onMounted(() => {
     </PrimaryButton>
 </div>
 
-     <div class="flex gap-2 bg-white p-4 border-b">
+     <div class="flex gap-2 p-4 bg-white border-b">
         <button
             @click="abaAtiva='compra'"
             :class="[
@@ -271,8 +267,9 @@ onMounted(() => {
     </div>
 
     <div  v-show="abaAtiva === 'compra'" class="p-4 bg-white">
-      <DadosCompra  :resetarForm="resetarForm"   :guadardad="guadardad"
-      @compraCriada="CriadaComprar",
+    <DadosCompra  :resetarForm="resetarForm"   :guadardad="guadardad"
+    :initialPedido="initialPedido"
+    @compraCriada="CriadaComprar"
       @compraselecionada="selecionarCompra"
 
      v-model:fornecedorID="fornecedorID"
@@ -310,7 +307,7 @@ v-model:totalDespesa="totalDespesa"
     <Fornecedor
   v-model="modelValue"
        :compras="compras"
-       :categoria="categoria",
+    :categoria="categoria"
 
 
        :fornecedor="fornecedor"
@@ -326,27 +323,27 @@ v-model:totalDespesa="totalDespesa"
 
 
  <!-- Totais -->
-                <div class="p-6 bg-gradient-to-r from-gray-50 to-gray-100 border-t border-gray-200">
+                <div class="p-6 border-t border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100">
                     <div class="overflow-x-auto">
-                        <table class="w-full border-collapse rounded-xl overflow-hidden shadow-sm">
+                        <table class="w-full overflow-hidden border-collapse shadow-sm rounded-xl">
                             <thead>
-                                <tr class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
-                                    <th class="p-4 text-left font-semibold">
-                                        <i class="fas fa-receipt mr-2"></i>Despesa
+                                <tr class="text-white bg-gradient-to-r from-blue-600 to-indigo-600">
+                                    <th class="p-4 font-semibold text-left">
+                                        <i class="mr-2 fas fa-receipt"></i>Despesa
                                     </th>
-                                    <th class="p-4 text-left font-semibold">
-                                        <i class="fas fa-shopping-bag mr-2"></i>Compra
+                                    <th class="p-4 font-semibold text-left">
+                                        <i class="mr-2 fas fa-shopping-bag"></i>Compra
                                     </th>
-                                    <th class="p-4 text-left font-semibold">
-                                        <i class="fas fa-tag mr-2"></i>Venda
+                                    <th class="p-4 font-semibold text-left">
+                                        <i class="mr-2 fas fa-tag"></i>Venda
                                     </th>
-                                    <th class="p-4 text-left font-semibold">
-                                        <i class="fas fa-percent mr-2"></i>Venda com IVA
+                                    <th class="p-4 font-semibold text-left">
+                                        <i class="mr-2 fas fa-percent"></i>Venda c/ IVA total
                                     </th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr class="bg-white hover:bg-blue-50 transition-colors duration-200">
+                                <tr class="transition-colors duration-200 bg-white hover:bg-blue-50">
                                     <td class="p-4 font-medium text-gray-700">
                                     {{moeda(totalDespesa) }}
 
@@ -367,19 +364,19 @@ v-model:totalDespesa="totalDespesa"
                     </div>
 
                     <!-- Resumo Financeiro -->
-                    <div class="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
-                            <p class="text-sm text-gray-500 mb-1">
-                                <i class="fas fa-wallet mr-1"></i>Gasto Total
+                    <div class="grid grid-cols-1 gap-4 mt-6 md:grid-cols-4">
+                        <div class="p-4 bg-white border border-gray-200 shadow-sm rounded-xl">
+                            <p class="mb-1 text-sm text-gray-500">
+                                <i class="mr-1 fas fa-wallet"></i>Gasto Total
                             </p>
                             <p class="text-xl font-bold text-gray-800">
                                {{ moeda(gastoTotal) }}
                             </p>
                         </div>
 
-                        <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
-                            <p class="text-sm text-gray-500 mb-1">
-                                <i class="fas fa-chart-line mr-1"></i>Lucro sem IVA
+                        <div class="p-4 bg-white border border-gray-200 shadow-sm rounded-xl">
+                            <p class="mb-1 text-sm text-gray-500">
+                                <i class="mr-1 fas fa-chart-line"></i>Lucro sem IVA
                             </p>
                            <p
 :class="[
@@ -394,18 +391,18 @@ v-model:totalDespesa="totalDespesa"
 </p>
                         </div>
 
-                        <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
-                            <p class="text-sm text-gray-500 mb-1">
-                                <i class="fas fa-calculator mr-1"></i>IVA
+                        <div class="p-4 bg-white border border-gray-200 shadow-sm rounded-xl">
+                            <p class="mb-1 text-sm text-gray-500">
+                                <i class="mr-1 fas fa-calculator"></i>IVA
                             </p>
                             <p class="text-xl font-bold text-orange-600">
                             {{ moeda(valorIVA) }}
                             </p>
                         </div>
 
-                        <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
-                            <p class="text-sm text-gray-500 mb-1">
-                                <i class="fas fa-money-bill-wave mr-1"></i>Lucro com IVA
+                        <div class="p-4 bg-white border border-gray-200 shadow-sm rounded-xl">
+                            <p class="mb-1 text-sm text-gray-500">
+                                <i class="mr-1 fas fa-money-bill-wave"></i>Lucro com IVA
                             </p>
                             <p :class="[
                                 lucroComIVA >= 0
@@ -425,7 +422,7 @@ v-model:totalDespesa="totalDespesa"
 
 
    <!-- Botões -->
-                <div class="mt-6 flex flex-wrap justify-end gap-3 pt-6 border-t border-gray-200">
+                <div class="flex flex-wrap justify-end gap-3 pt-6 mt-6 border-t border-gray-200">
                     <button
                         type="button"
                         @click="reset()"

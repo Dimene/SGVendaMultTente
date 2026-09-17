@@ -65,10 +65,19 @@ return  Response()->json(["sucesss"=>1,"categorias"=>$categorias]);
 
   public function atributos($categoria)
 {
-    $categoria = Categoria::with('atributos')
+    $categoria = Categoria::with(['atributos', 'grupo.listaatributo'])
         ->find($categoria);
 
-    return response()->json($categoria);
+    if (!$categoria) {
+        return response()->json(['atributos' => []]);
+    }
+
+    $atributos = collect($categoria->atributos ?? [])
+        ->merge($categoria->grupo?->listaatributo ?? collect())
+        ->unique('id')
+        ->values();
+
+    return response()->json(['atributos' => $atributos]);
 }
 
 

@@ -16,6 +16,7 @@ class vendas extends Model
         'valor_pago',
         'troco',
         'usario_id',
+        'cliente_id',
         'reiboNr',
         'total'
     ];
@@ -33,5 +34,10 @@ class vendas extends Model
     public function viaPagamento()
     {
         return $this->hasOne(ViaPagamento::class,'id','via_pagamento_id');
+    }
+
+    public function cliente()
+    {
+        return $this->belongsTo(Cliente::class, 'cliente_id');
     }
 }

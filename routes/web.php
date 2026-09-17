@@ -1,15 +1,19 @@
 <?php
 
 use App\Http\Controllers\CategoriaController;
+use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\CompraController;
 use App\Http\Controllers\FornecedorController;
+use App\Http\Controllers\homecontroller;
+use App\Http\Controllers\EstoqueController;
+use App\Http\Controllers\EmpresaController;
 use App\Http\Controllers\ProdutoController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\vendascontroler;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-
+  
 Route::get('/', function () {
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
@@ -19,24 +23,36 @@ Route::get('/', function () {
     ]);
 });
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+// Route::get('/dashboard', function () {
+   
+// })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
+
+Route::resource("dashboard",homecontroller::class);
+    Route::get('/estoque', [EstoqueController::class, 'index'])->name('estoque.index');
+    Route::get('/configuracoes/empresa', [EmpresaController::class, 'index'])->name('configuracoes.empresa');
+    Route::post('/configuracoes/empresa/{empresa}', [EmpresaController::class, 'update'])->name('configuracoes.empresa.update');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+    Route::get('/compras/relatorios', [CompraController::class, 'relatorios'])->name('compras.relatorios');
+    Route::get('/compras/relatorios/dados', [CompraController::class, 'relatorioDados'])->name('compras.relatorioDados');
     Route::resource('compras',CompraController::class);
      Route::get('/dadoscompra',[CompraController::class,"dadosCompra"])->name('compras.dados');
 
     Route::resource('fornecedor',FornecedorController::class);
+    Route::get('/compras/fornecedores', [FornecedorController::class, 'index'])->name('compras.fornecedores');
     Route::resource('vendas',vendascontroler::class);
+    Route::resource('clientes', ClienteController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::get('/vendas/reverter/vendas/{id}',[vendascontroler::class,'reverter'])->name('vendas.reverter');
+
+
+
     Route::get('/vendas/relatorios/mostrar',[vendascontroler::class,'relatorios'])->name('vendas.relatorios');
-    Route::get('/vendas/relatorios/mostrar',[vendascontroler::class,'passarLoja'])->name('vendas.passarLoja');
+    Route::get('/vendas/passar/loja',[vendascontroler::class,'passarLoja'])->name('vendas.passarLoja');
     Route::post('/vendas/adicionar/lojas',[vendascontroler::class,'addicionarlojas'])->name('vendas.addicionarlojas');
     Route::get('/vendas/relatorio/dados/{dataInicial?}/{DataFinal?}',
     [vendascontroler::class,'relatorioDados'])->name('vendas.relatorioDados');

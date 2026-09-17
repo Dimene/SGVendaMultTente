@@ -28,7 +28,7 @@ public function store(Request $request)
 {
 
 
-
+// dd($request->all());
 
 //   return response()->json($request->all());
 
@@ -83,43 +83,62 @@ public function store(Request $request)
 
         'preco_compra' => $Item["Preço Compra"],
         'iva' => 16,
-        'preco_venda' => $Item["Preço Venda"],
+        'preco_venda1' => $Item["Preço Venda cliente 1"],
+        'preco_venda2' => $Item["Preço Venda cliente 2"],
         'estoque' => $Item["Stock"],
         'Armazem_id' => $idarmazem,
-        'desconto' => 1,
+        'desconto' => min(100, max(0, (float) ($Item['Desconto (%)'] ?? $Item['desconto'] ?? 0))),
     ]
 );
 
 
-                // 'categoria_id' => $Item["categoria"] ?? null,
+        $fotos = collect();
+        $atributosExtras = [];
 
+        $categoria = Categoria::with('atributos')->find($Item['categoria'] ?? null);
 
-// $atributo=Categoria::where('atributos')->first();
-$dadosss=categoria::where("id",$Item['categoria'])->with('atributos')->first();
+        foreach ($grupo->listaatributo as $itematributo) {
+            $nomeAtributo = $itematributo->Descricao ?? $itematributo->nome;
+            if (array_key_exists($nomeAtributo, $Item) && $Item[$nomeAtributo] !== '') {
+                $atributosExtras[$nomeAtributo] = $Item[$nomeAtributo];
+            }
+        }
 
-$atributoscategoria=collect();
-$atributogrupo=collect();
-$fotos=collect();
+        foreach ($categoria?->atributos ?? [] as $itematributo) {
+            $nomeAtributo = $itematributo->Descricao ?? $itematributo->nome;
+            if (array_key_exists($nomeAtributo, $Item) && $Item[$nomeAtributo] !== '') {
+                $atributosExtras[$nomeAtributo] = $Item[$nomeAtributo];
+            }
+        }
 
+        if (is_string($Item['outros_Atributos'] ?? null) && trim($Item['outros_Atributos']) !== '') {
+            $outrosAtributos = collect(explode('|', $Item['outros_Atributos']))
+                ->mapWithKeys(function ($item) {
+                    $item = trim($item);
+                    if ($item === '') {
+                        return [];
+                    }
 
-$outros_Atributos = collect(explode('|', $Item["outros_Atributos"]))
-    ->mapWithKeys(function ($item) {
-        [$chave, $valor] = array_map('trim', explode(':', $item, 2));
-        return [$chave => is_numeric($valor) ? $valor + 0 : $valor];
-    })
-    ->toArray();
-$outros_Atr = json_encode($outros_Atributos);
+                    [$chave, $valor] = array_pad(array_map('trim', explode(':', $item, 2)), 2, '');
+                    if ($chave === '') {
+                        return [];
+                    }
 
+                    return [$chave => is_numeric($valor) ? $valor + 0 : $valor];
+                })
+                ->toArray();
 
-  foreach($Item["fotos"] as $key=>$itemdados){
-    $atributos=$key."".$Item["Nome"];
-$fotos->push($this->salvarImagemBase64($itemdados));
-    }
+            $atributosExtras = array_merge($atributosExtras, $outrosAtributos);
+        }
 
+        foreach ($Item['fotos'] ?? [] as $itemdados) {
+            $fotos->push($this->salvarImagemBase64($itemdados));
+        }
 
-produtos_atributos::updateOrCreate(['produto_item_id'=>$dadosItem->id],[
-        'outrosAtributos'=>$outros_Atr,
-        'fotos'=>$fotos]);
+        produtos_atributos::updateOrCreate(['produto_item_id' => $dadosItem->id], [
+            'outrosAtributos' => json_encode($atributosExtras),
+            'fotos' => $fotos,
+        ]);
 
 
     }
@@ -143,49 +162,74 @@ produtos_atributos::updateOrCreate(['produto_item_id'=>$dadosItem->id],[
 
 
     public function show($id)
-
-
-
     {
+        $compra = Compra::where('id', $id)
+            ->with([
+                'produtosItem.produto.categoria.grupo.listaatributo',
+                'produtosItem.produto.categoria.atributos',
+                'produtosItem.outrosatributos',
+                'produtosItem.produto.categoria'
+            ])
+            ->first();
 
-$titulo="";
-$collecao=collect();
-        $dados=Compra::where("id",$id)->with(['produtosItem.produto.categoria.grupo',"produtosItem.outrosatributos"])->first();
+        if (!$compra) {
+            return response()->json(['dados' => []]);
+        }
 
-$categorias=Categoria::with('atributos')->get();
+        $collecao = collect();
 
+        foreach ($compra->produtosItem as $item) {
+            $produto = $item->produto;
+            $grupo = $produto?->categoria?->grupo;
+            $grupoAtributos = $grupo?->listaatributo ?? collect();
+            $dadosAtributos = json_decode($item->outrosatributos?->outrosAtributos ?? '{}', true) ?? [];
+            $fotos = json_decode($item->outrosatributos?->fotos ?? '[]', true) ?? [];
+            $armazem = $item->Armazem_id ? Armazem::find($item->Armazem_id) : null;
 
-        foreach ($dados->produtosItem as $item) {
-$titulo= $item->produto->categoria->grupo->nome;
-    $produto = [
-        'id'      => $item->id,
-        'categoria'      => $item->produto->categoria->id,
-        'Nome'           => $item->produto->nome,
-        'grupo'          => $item->produto->categoria->grupo->nome,
-        'Preço Compra'   => $item->preco_compra,
-        'Preço Venda'    =>  $item->preco_venda,
-        'Venda com IVA'  => $item->preco_venda,
-        'Stock'          => $item->estoque,
-        'fotos'          => json_decode($item->outrosatributos?->fotos, true),
-    ];
+            foreach ($grupoAtributos as $atributo) {
+                $nomeAtributo = $atributo->Descricao ?? $atributo->nome;
+                if (isset($dadosAtributos[$nomeAtributo])) {
+                    $dadosAtributos[$nomeAtributo] = $dadosAtributos[$nomeAtributo];
+                }
+            }
 
+            foreach ($produto?->categoria?->atributos ?? [] as $atributo) {
+                $nomeAtributo = $atributo->Descricao ?? $atributo->nome;
+                if (isset($dadosAtributos[$nomeAtributo])) {
+                    $dadosAtributos[$nomeAtributo] = $dadosAtributos[$nomeAtributo];
+                }
+            }
 
-    // Converter o JSON para array
+            $linhaProduto = [
+                'id' => $item->id,
+                'categoria' => $produto?->categoria?->id ?? null,
+                'Nome' => $produto?->nome ?? '',
+                'grupo' => $grupo?->nome ?? 'Sem grupo',
+                'armazem' => $armazem?->Descricao ?? $item->Armazem_id ?? '',
+                'Preço Compra' => (float) ($item->preco_compra ?? 0),
+                'iva' => (float) ($item->iva ?? 0),
+                'Preço Venda cliente 1' => (float) ($item->preco_venda1 ?? 0),
+                'Preço Venda cliente 2' => (float) ($item->preco_venda2 ?? 0),
+                'Desconto (%)' => (float) ($item->desconto ?? 0),
+                'Venda com IVA cliente 1' => round(((float) ($item->preco_venda1 ?? 0)) * ($item->iva ?? 1), 2),
+                'Venda com IVA cliente 2' => round(((float) ($item->preco_venda2 ?? 0)) * ($item->iva ?? 1), 2),
+                'Stock' => (int) ($item->estoque ?? 0),
+                'fotos' => $fotos,
+                'outros_Atributos' => !empty($dadosAtributos) ? implode(' | ', array_map(
+                    fn ($chave, $valor) => $chave . ': ' . $valor,
+                    array_keys($dadosAtributos),
+                    array_values($dadosAtributos)
+                )) : '',
+            ];
 
-    // echo($item->outrosatributos);
-    $atributos = json_decode($item->outrosatributos?->outrosAtributos, true) ?? [];
+            foreach ($dadosAtributos as $key => $valor) {
+                $linhaProduto[$key] = is_numeric($valor) ? (float) $valor : $valor;
+            }
 
+            $collecao->push((object) $linhaProduto);
+        }
 
-    // Juntar os atributos ao produto
-    $produto = array_merge($produto, $atributos);
-
-    // Adicionar à coleção
-    $collecao->push((object)$produto);
-}
-
-
-//   dd($collecao);
-return response()->json(["dados"=>$collecao]);
+        return response()->json(['dados' => $collecao]);
     }
 
     public function update(Request $request, $id)

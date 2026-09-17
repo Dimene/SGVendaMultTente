@@ -3,6 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head } from '@inertiajs/vue3';
 import { ref, watch, computed, onMounted, reactive } from "vue";
 import vendasDetalhesShow from './vendasDetalhesShow.vue';
+import PrintReportButton from '@/Components/PrintReportButton.vue';
 import Swal from 'sweetalert2';
 import { debounce } from 'lodash';
 
@@ -221,7 +222,11 @@ async function carregarDados() {
 function imprimirA5() {
   const printContent = document.querySelector('.tablePane');
   if (!printContent) {
-    alert('Conteúdo não encontrado para impressão');
+        Swal.fire({
+            icon: 'error',
+            title: 'Impressão indisponível',
+            text: 'Conteúdo não encontrado para impressão.'
+        });
     return;
   }
 
@@ -245,7 +250,11 @@ function imprimirA5() {
   // Criar janela de impressão A5
   const printWindow = window.open('', '_blank', 'width=420,height=595');
   if (!printWindow) {
-    alert('Por favor, permita pop-ups para imprimir');
+        Swal.fire({
+            icon: 'warning',
+            title: 'Pop-up bloqueado',
+            text: 'Permita pop-ups no navegador para imprimir.'
+        });
     return;
   }
 
@@ -487,9 +496,9 @@ function toggleDark() {
 
         <AuthenticatedLayout>
         <template #header>
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div class="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
                 <div>
-                    <h2 class="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                    <h2 class="flex items-center gap-2 text-2xl font-bold text-gray-800 dark:text-white">
                         📊 Vendas Diarias
                         <span class="text-sm font-normal text-gray-500 dark:text-gray-400">
                             <!-- {{ dataAtualizacao.toLocaleTimeString('pt-MZ') }} -->
@@ -501,18 +510,10 @@ function toggleDark() {
                     </p>
                 </div>
 
-                <div class="flex gap-3 flex-wrap">
-                    <button
-                        @click="toggleDark"
-                        class="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200"
-                    >
-                        <i :class="darkMode ? 'fas fa-sun text-yellow-400' : 'fas fa-moon'"></i>
-                        {{ darkMode ? 'Claro' : 'Escuro' }}
-                    </button>
-
+                <div class="flex flex-wrap gap-3">
                     <button
                         @click="carregarDados"
-                        class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200 flex items-center gap-2"
+                        class="flex items-center gap-2 px-4 py-2 text-white transition-all duration-200 bg-blue-600 rounded-lg hover:bg-blue-700"
                         :disabled="isLoading"
                     >
                         <i class="fas fa-sync-alt" :class="{'animate-spin': isLoading}"></i>
@@ -525,17 +526,17 @@ function toggleDark() {
         <div class="py-12" >
             <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
                 <!-- Filtros -->
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
+                <div class="mb-6 overflow-hidden bg-white shadow-sm sm:rounded-lg">
                     <div class="p-6">
-                        <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+                        <div class="grid grid-cols-1 gap-4 md:grid-cols-12">
                             <!-- Funcionário -->
                             <div class="md:col-span-3">
-                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                <label class="block mb-1 text-sm font-medium text-gray-700">
                                     Funcionário
                                 </label>
                                 <select
                                     v-model="usuarioSelecionado"
-                                    class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                    class="w-full border-gray-300 rounded-lg focus:border-blue-500 focus:ring-blue-500"
                                 >
                                     <option :value="null">Todos os Funcionários</option>
                                     <option
@@ -550,12 +551,12 @@ function toggleDark() {
 
                             <!-- Via de Pagamento -->
                             <div class="md:col-span-3">
-                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                <label class="block mb-1 text-sm font-medium text-gray-700">
                                     Via de Pagamento
                                 </label>
                                 <select
                                     v-model="viapagamentoselcionada"
-                                    class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                    class="w-full border-gray-300 rounded-lg focus:border-blue-500 focus:ring-blue-500"
                                 >
                                     <option :value="null">Todas as Vias</option>
                                     <option
@@ -570,28 +571,28 @@ function toggleDark() {
 
                             <!-- Datas -->
                             <div class="md:col-span-4">
-                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                <label class="block mb-1 text-sm font-medium text-gray-700">
                                     Período
                                 </label>
                                 <div class="grid grid-cols-2 gap-2">
                                     <input
                                         type="date"
                                         v-model="dataInicial"
-                                        class="rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                        class="border-gray-300 rounded-lg focus:border-blue-500 focus:ring-blue-500"
                                     />
                                     <input
                                         type="date"
                                         v-model="dataFinal"
-                                        class="rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                        class="border-gray-300 rounded-lg focus:border-blue-500 focus:ring-blue-500"
                                     />
                                 </div>
                             </div>
 
                             <!-- Ações -->
-                            <!-- <div class="md:col-span-2 flex items-end">
+                            <!-- <div class="flex items-end md:col-span-2">
                                 <button
                                     @click="limparFiltros"
-                                    class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg transition duration-200"
+                                    class="w-full px-4 py-2 font-medium text-gray-700 transition duration-200 bg-gray-100 rounded-lg hover:bg-gray-200"
                                 >
                                     <i class="fas fa-undo"></i> Limpar Filtros
                                 </button>
@@ -601,17 +602,17 @@ function toggleDark() {
                 </div>
 
                 <!-- Loading -->
-                <div v-if="isLoading" class="bg-white rounded-lg shadow-sm p-12">
+                <div v-if="isLoading" class="p-12 bg-white rounded-lg shadow-sm">
                     <div class="flex flex-col items-center justify-center">
-                        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
+                        <div class="w-12 h-12 mb-4 border-b-2 border-blue-500 rounded-full animate-spin"></div>
                         <p class="text-gray-600">Carregando dados...</p>
                     </div>
                 </div>
 
                 <!-- Sem Dados -->
-                <div v-else-if="!hasData" class="bg-white rounded-lg shadow-sm p-12">
+                <div v-else-if="!hasData" class="p-12 bg-white rounded-lg shadow-sm">
                     <div class="text-center">
-                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-12 h-12 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
                         <h3 class="mt-2 text-sm font-medium text-gray-900">Nenhuma venda encontrada</h3>
@@ -624,8 +625,8 @@ function toggleDark() {
                 <!-- Dados -->
                 <div v-else class="tablePane">
                     <!-- Resumo -->
-                    <div class="bg-gradient-to-r from-blue-900 to-blue-800 text-white rounded-lg shadow-sm p-4 mb-6 ">
-                        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                    <div class="p-4 mb-6 text-white rounded-lg shadow-sm bg-gradient-to-r from-blue-900 to-blue-800 ">
+                        <div class="grid grid-cols-2 gap-4 md:grid-cols-5">
                             <div class="text-center">
                                 <div class="text-sm opacity-75">Total de Vendas</div>
                                 <div class="text-xl font-bold">{{ totalVendas }}</div>
@@ -650,7 +651,7 @@ function toggleDark() {
                     </div>
 
                     <!-- Detalhes das Vendas -->
-                    <div  v-for="(venda, index) in dadosvendasfeitas" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6" :key="index">
+                    <div  v-for="(venda, index) in dadosvendasfeitas" class="p-6 bg-white shadow-lg dark:bg-gray-800 rounded-xl" :key="index">
                     <vendasDetalhesShow
 
 
@@ -663,14 +664,15 @@ function toggleDark() {
             </div>
 
 
-             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 no-print"  v-if="hasData" >
+             <div class="grid grid-cols-1 gap-4 p-4 md:grid-cols-2 no-print"  v-if="hasData" >
              <div></div>
         <div>
 
-          <button class="bg-cyan-700 rounded hover:bg-cyan-800 text-white p-2 w-full" @click="imprimirA5">
-            <i class="fas fa-print" aria-hidden="true"></i>
-            Imprimir
-          </button>
+                    <PrintReportButton
+                        selector=".tablePane"
+                        title="Relatório de Vendas"
+                        label="Imprimir"
+                    />
         </div>
 
 

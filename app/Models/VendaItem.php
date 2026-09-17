@@ -27,4 +27,8 @@ class VendaItem extends Model
     {
         return $this->belongsTo(produtoitems::class, 'produto_id');
     }
+
+    public function produtoloja(){
+        return $this->hasOne(loja::class,'produtoitem_id','produto_id');
+    }
 }

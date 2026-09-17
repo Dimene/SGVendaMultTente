@@ -1,9 +1,9 @@
 <template>
     <AuthenticatedLayout>
          <template #header>
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div class="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
                 <div>
-                    <h2 class="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                    <h2 class="flex items-center gap-2 text-2xl font-bold text-gray-800 dark:text-white">
                         📊 Vendas Diarias
                         <span class="text-sm font-normal text-gray-500 dark:text-gray-400">
                             <!-- {{ dataAtualizacao.toLocaleTimeString('pt-MZ') }} -->
@@ -15,18 +15,10 @@
                     </p>
                 </div>
 
-                <div class="flex gap-3 flex-wrap">
-                    <button
-                        @click="toggleDark"
-                        class="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200"
-                    >
-                        <i :class="darkMode ? 'fas fa-sun text-yellow-400' : 'fas fa-moon'"></i>
-                        {{ darkMode ? 'Claro' : 'Escuro' }}
-                    </button>
-
+                <div class="flex flex-wrap gap-3">
                     <button
                         @click="carregarDados"
-                        class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200 flex items-center gap-2"
+                        class="flex items-center gap-2 px-4 py-2 text-white transition-all duration-200 bg-blue-600 rounded-lg hover:bg-blue-700"
                         :disabled="isLoading"
                     >
                         <i class="fas fa-sync-alt" :class="{'animate-spin': isLoading}"></i>
@@ -37,24 +29,24 @@
         </template>
 
         <!-- Tabela de Vendas -->
-        <div class="p-4 bg-white rounded-xl border-t-4 border-cyan-700" v-show="mostrar === 'tabela'">
+        <div class="p-4 bg-white border-t-4 rounded-xl border-cyan-700" v-show="mostrar === 'tabela'">
             <!-- Filtros -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 bg-white p-4 mb-6 rounded">
+            <div class="grid grid-cols-1 gap-4 p-4 mb-6 bg-white rounded md:grid-cols-2 lg:grid-cols-4">
                 <div class="relative">
-                    <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                    <i class="absolute text-gray-400 fas fa-search left-3 top-3"></i>
                     <input
                         type="text"
                         v-model="searchText"
                         placeholder="Pesquisar vendas..."
-                        class="border rounded-lg pl-10 pr-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        class="w-full py-2 pl-10 pr-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                 </div>
 
                 <div class="relative">
-                    <i class="fas fa-user absolute left-3 top-3 text-gray-400"></i>
+                    <i class="absolute text-gray-400 fas fa-user left-3 top-3"></i>
                     <select
                         v-model="usuarioserach"
-                        class="border rounded-lg pl-10 pr-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+                        class="w-full py-2 pl-10 pr-4 border rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                         <option value="">Todos os usuários</option>
                         <option v-for="usuario in usuarios" :key="usuario" :value="usuario">
@@ -64,19 +56,19 @@
                 </div>
 
                 <div class="relative">
-                    <i class="fas fa-calendar absolute left-3 top-3 text-gray-400"></i>
+                    <i class="absolute text-gray-400 fas fa-calendar left-3 top-3"></i>
                     <input
                         v-model="DataVenda"
                         type="date"
-                        class="border rounded-lg pl-10 pr-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        class="w-full py-2 pl-10 pr-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                 </div>
 
                 <div class="relative">
-                    <i class="fas fa-credit-card absolute left-3 top-3 text-gray-400"></i>
+                    <i class="absolute text-gray-400 fas fa-credit-card left-3 top-3"></i>
                     <select
                         v-model="viapagamentoserach"
-                        class="border rounded-lg pl-10 pr-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+                        class="w-full py-2 pl-10 pr-4 border rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                         <option value="">Todas as vias</option>
                         <option v-for="value in viaspagamentos" :key="value.nome" :value="value.nome">
@@ -105,10 +97,10 @@
         <!-- Detalhes da Venda -->
         <div class="p-4 bg-white rounded-md" v-show="mostrar === 'detalhes'">
             <button
-                class="bg-slate-300 rounded p-2 hover:bg-slate-400 transition-colors"
+                class="p-2 transition-colors rounded bg-slate-300 hover:bg-slate-400"
                 @click="mostrar = 'tabela'"
             >
-                <i class="fas fa-table fa-lg text-blue-600 hover:text-blue-900"></i>
+                <i class="text-blue-600 fas fa-table fa-lg hover:text-blue-900"></i>
                 <span class="ml-2">Voltar</span>
             </button>
 
@@ -280,13 +272,11 @@ const colDefs = [
         filter: false,
         cellRenderer: () => {
             return `
-                <div class="flex gap-2 justify-center">
-                    <button class="btn-visualizar px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600 transition-colors">
+                <div class="flex justify-center gap-2">
+                    <button class="px-2 py-1 text-xs text-white transition-colors bg-blue-500 rounded btn-visualizar hover:bg-blue-600">
                         <i class="fas fa-eye"></i>
                     </button>
-                    <button class="btn-eliminar px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600 transition-colors">
-                        <i class="fas fa-trash"></i>
-                    </button>
+                    <!-- <button class="px-2 py-1 text-xs text-white transition-colors bg-red-500 rounded btn-eliminar hover:bg-red-600">   <i class="fas fa-trash"></i> </button> -->
                 </div>
             `;
         },
