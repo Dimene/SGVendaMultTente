@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Armazem;
 use App\Models\Cliente;
+use App\Models\Empresa;
 use App\Models\gruposItem;
 use App\Models\loja;
 use App\Models\loja_desc;
@@ -18,7 +19,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
-
+use Illuminate\Support\Facades\Gate;
 use function Termwind\render;
 
 class vendascontroler extends Controller
@@ -28,9 +29,18 @@ class vendascontroler extends Controller
      */
     public function index()
     {
+
+    if(!auth()->user()->can('venda-index')){
+
+        return Inertia::render('componets/alerta');
+        }
+
+   
+  
         $vendas=vendas::with([
         'itens.produto.produto.categoria',
         'viaPagamento',
+        'cliente',
         'usuario'
     ])->get();
 
@@ -56,6 +66,7 @@ $collec->push((object)
     "Total"=>$item->total,
     "id"=>$item->id,
     "usuario"=>$item->usuario->name,
+    "cliente"=>$item->cliente->nome,
     'detalhes'=>$item
 
 ]);
@@ -231,21 +242,18 @@ redirect()->route('vendas.index')->with('success', 'Venda revertida com sucesso.
 
     }
 
+public function relatorios()
+{
+    $funcionarios    = User::all();          // ← renomeado
+    $viasdepagamento = ViaPagamento::all();
+    $empresa         = Empresa::first();
 
-    public function relatorios()
-    {
-
-    $usuario=User::all();
-    $viasdepagamento=ViaPagamento::all();
-    //$viasdepagamento=ViaPagamento::all();
-
-return Inertia::render('vendas/relatorioVendas',[
-    'usuario'=>$usuario,
-    'viasdepagamento'=>$viasdepagamento,
-]);
-
-
-    }
+    return Inertia::render('vendas/relatorioVendas', [
+        'funcionarios'    => $funcionarios,  // ← nome que não colide
+        'viasdepagamento' => $viasdepagamento,
+        'empresa'         => $empresa,       // ← sem cifrão
+    ]);
+}
 public function relatorioDados($datainicio,$datafim){
 
 
@@ -263,6 +271,7 @@ $dados=vendas::whereDate("created_at",">=",$datainicio)
 ->whereDate("created_at","<=",$datafim)->with([
         'itens.produto.produto.categoria',
         'viaPagamento',
+        'cliente',
         'usuario'
     ])->get();
 
@@ -313,6 +322,7 @@ $collec->push((object)
     'detalhes'=>$item,
     "totaliva"=>$totalIva,
     "semiva"=>$valorsemiva ,
+    "cliente"=>$item->cliente->nome,
     "totalcompra"=>$totalvcompra ,
     "lucro"=>$valorsemiva-$totalvcompra ,
 
@@ -321,7 +331,7 @@ $collec->push((object)
 
 
 
-
+// dd($collec);
 return response()->json($collec);
 
 

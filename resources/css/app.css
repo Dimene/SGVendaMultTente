@@ -50,4 +50,40 @@
 	html.dark .border-gray-300 {
 		border-color: #374151;
 	}
+
+	html.dark .bg-gray-100,
+	html.dark .bg-gray-50\/50 {
+		background-color: #17232d;
+	}
+
+	html.dark .bg-gray-200 {
+		background-color: #344752;
+	}
+
+	html.dark .text-gray-600 {
+		color: #b9c8cf;
+	}
+
+	html.dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]),
+	html.dark .border-b,
+	html.dark .border-t {
+		border-color: #374151;
+	}
+
+	html.dark table thead,
+	html.dark thead {
+		background-color: #1d2d37;
+	}
+
+	html.dark table tbody tr:hover {
+		background-color: #2b404c;
+	}
+
+	html.dark .shadow,
+	html.dark .shadow-sm,
+	html.dark .shadow-md,
+	html.dark .shadow-lg,
+	html.dark .shadow-xl {
+		--tw-shadow-color: rgb(0 0 0 / .28);
+	}
 }

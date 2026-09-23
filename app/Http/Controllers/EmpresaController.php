@@ -24,68 +24,131 @@ class EmpresaController extends Controller
         ]);
     }
 
-    public function update(Request $request, Empresa $empresa)
-    {
-        $dados = $request->validate([
-            'nome' => ['required', 'string', 'max:200'],
-            'nome_fantasia' => ['nullable', 'string', 'max:150'],
-            'documento' => ['nullable', 'string', 'max:50'],
-            'email' => ['nullable', 'email', 'max:255'],
-            'telefone' => ['nullable', 'string', 'max:30'],
-            'celular' => ['nullable', 'string', 'max:30'],
-            'endereco' => ['nullable', 'string'],
-            'cidade' => ['nullable', 'string', 'max:100'],
-            'provincia' => ['nullable', 'string', 'max:100'],
-            'pais' => ['required', 'string', 'max:100'],
-            'site' => ['nullable', 'url', 'max:255'],
-            'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:2048'],
-            'lojas' => ['array'],
-            'lojas.*.id' => ['nullable', 'integer'],
-            'lojas.*.nome' => ['required', 'string', 'max:255'],
-            'armazens' => ['array'],
-            'armazens.*.id' => ['nullable', 'integer'],
-            'armazens.*.nome' => ['required', 'string', 'max:255'],
-        ]);
+  public function update(Request $request, Empresa $empresa)
+{
+    $dados = $request->validate([
+        'nome' => ['required', 'string', 'max:200'],
+        'nome_fantasia' => ['nullable', 'string', 'max:150'],
+        'documento' => ['nullable', 'string', 'max:50'],
+        'email' => ['nullable', 'email', 'max:255'],
+        'telefone' => ['nullable', 'string', 'max:30'],
+        'celular' => ['nullable', 'string', 'max:30'],
+        'endereco' => ['nullable', 'string'],
+        'cidade' => ['nullable', 'string', 'max:100'],
+        'provincia' => ['nullable', 'string', 'max:100'],
+        'pais' => ['required', 'string', 'max:100'],
+        'site' => ['nullable', 'string', 'max:255'],
 
-        DB::transaction(function () use ($empresa, $dados, $request) {
-            if ($request->hasFile('logo')) {
-                if ($empresa->logo) {
-                    Storage::disk('public')->delete($empresa->logo);
+        'logo' => [
+            'nullable',
+            'image',
+            'mimes:jpg,jpeg,png,webp',
+            'max:2048'
+        ],
+
+        'lojas' => ['nullable', 'array'],
+        'lojas.*.id' => ['nullable', 'integer'],
+        'lojas.*.nome' => ['required', 'string', 'max:255'],
+
+        'armazens' => ['nullable', 'array'],
+        'armazens.*.id' => ['nullable', 'integer'],
+        'armazens.*.nome' => ['required', 'string', 'max:255'],
+    ]);
+
+    DB::transaction(function () use ($request, $empresa, &$dados) {
+
+        /*
+        |--------------------------------------------------------------------------
+        | LOGO
+        |--------------------------------------------------------------------------
+        */
+
+        if ($request->hasFile('logo')) {
+
+            // Apaga a logo antiga
+            if ($empresa->logo) {
+                Storage::disk('public')->delete($empresa->logo);
+            }
+
+            // Guarda a nova logo
+            $dados['logo'] = $request->file('logo')
+                ->store('empresa', 'public');
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | EMPRESA
+        |--------------------------------------------------------------------------
+        */
+
+        $empresa->update(
+            collect($dados)
+                ->except(['lojas', 'armazens'])
+                ->toArray()
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | LOJAS
+        |--------------------------------------------------------------------------
+        */
+
+        foreach ($dados['lojas'] ?? [] as $loja) {
+
+            if (!empty($loja['id'])) {
+
+                $registro = loja_desc::find($loja['id']);
+
+                if (!$registro) {
+                    $registro = new loja_desc();
                 }
-                $dados['logo'] = $request->file('logo')->store('empresa', 'public');
+
+            } else {
+
+                $registro = new loja_desc();
             }
 
-            $empresa->update(collect($dados)->except(['lojas', 'armazens'])->toArray());
+            $registro->Desc = $loja['nome'];
 
-            $lojaIds = [];
-            foreach ($dados['lojas'] ?? [] as $loja) {
-                $registro = !empty($loja['id'])
-                    ? loja_desc::find($loja['id'])
-                    : new loja_desc();
-                $registro->Desc = $loja['nome'];
-                $registro->save();
-                $lojaIds[] = $registro->id;
+            $registro->save();
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | ARMAZÉNS
+        |--------------------------------------------------------------------------
+        */
+
+        foreach ($dados['armazens'] ?? [] as $armazem) {
+
+            if (!empty($armazem['id'])) {
+
+                $registro = Armazem::find($armazem['id']);
+
+                if (!$registro) {
+                    $registro = new Armazem();
+                }
+
+            } else {
+
+                $registro = new Armazem();
             }
 
-            if ($lojaIds) {
-                loja_desc::whereNotIn('id', $lojaIds)->delete();
-            }
+            $registro->Descricao = $armazem['nome'];
 
-            $armazemIds = [];
-            foreach ($dados['armazens'] ?? [] as $armazem) {
-                $registro = !empty($armazem['id'])
-                    ? Armazem::find($armazem['id'])
-                    : new Armazem();
-                $registro->Descricao = $armazem['nome'];
-                $registro->save();
-                $armazemIds[] = $registro->id;
-            }
+            $registro->save();
+        }
+    });
 
-            if ($armazemIds) {
-                Armazem::whereNotIn('id', $armazemIds)->doesntHave('produtositem')->delete();
-            }
-        });
+    return back()->with(
+        'success',
+        'Dados da empresa atualizados com sucesso.'
+    );
+}
 
-        return back()->with('success', 'Dados da empresa atualizados com sucesso.');
-    }
+public function show($id){
+   
+}
 }

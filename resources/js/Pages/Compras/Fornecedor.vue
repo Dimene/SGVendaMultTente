@@ -1,4 +1,4 @@
-<script setup lang="js">
+=<script setup lang="js">
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import { Head, useForm } from '@inertiajs/vue3'
 import { onMounted, ref, watch, computed } from 'vue'
@@ -233,7 +233,6 @@ const validarFormulario = () => {
 
 // ==================== BUSCAR FORNECEDOR ====================
 const buscarFornecedor = async () => {
-    // Limpa espaços extras e normaliza o termo de busca
     const termo = (form.nome || form.nuit || form.email || '').trim()
 
     if (!termo) {
@@ -249,7 +248,6 @@ const buscarFornecedor = async () => {
         if (res.data) {
             const f = res.data
 
-            // Preencher dados do fornecedor
             form.nome = f.nome || ''
             form.nuit = f.documento || ''
             form.email = f.email || ''
@@ -270,11 +268,6 @@ const buscarFornecedor = async () => {
     } catch (error) {
         console.error('Erro na busca:', error)
         mostrarNotificacao('Fornecedor não encontrado. Verifique os dados informados.', 'error')
-
-        // Limpar campos se não encontrado (opcional)
-        // form.nome = ''
-        // form.nuit = ''
-        // form.email = ''
     } finally {
         buscando.value = false
     }
@@ -292,7 +285,6 @@ const guardarFornecedor = () => {
         return
     }
 
-    // Atualizar form com dados mais recentes
     form.contactos = contactos.value.map(c => ({
         tipo: c.tipo,
         valor: c.valor,
@@ -335,35 +327,35 @@ onMounted(() => {
 </script>
 
 <template>
-    <!-- MODAL -->
-    <div v-if="modelValue" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <!-- MODAL com suporte a dark mode -->
+    <div v-if="modelValue" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 dark:bg-black/70 backdrop-blur-sm">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto transition-colors">
 
             <!-- Cabeçalho -->
-            <div class="sticky top-0 bg-white z-10 flex items-center justify-between p-6 border-b border-gray-200">
+            <div class="sticky top-0 z-10 flex items-center justify-between p-6 transition-colors bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700">
                 <div class="flex items-center gap-3">
-                    <div class="bg-blue-100 rounded-lg p-2">
-                        <i class="fas fa-truck text-blue-600"></i>
+                    <div class="p-2 bg-blue-100 rounded-lg dark:bg-blue-900/50">
+                        <i class="text-blue-600 fas fa-truck dark:text-blue-400"></i>
                     </div>
-                    <h2 class="text-xl font-bold text-gray-900">Novo Registo de Fornecedor</h2>
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">Novo Registo de Fornecedor</h2>
                 </div>
                 <button
                     @click="fecharModal"
-                    class="text-gray-400 hover:text-gray-600 transition-colors hover:bg-gray-100 rounded-lg p-2"
+                    class="p-2 text-gray-400 transition-colors rounded-lg hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                 >
-                    <i class="fas fa-times text-xl"></i>
+                    <i class="text-xl fas fa-times"></i>
                 </button>
             </div>
 
             <!-- Notificação -->
             <div
                 v-if="notificacao.show"
-                class="mx-6 mt-4 p-4 rounded-lg border flex items-center gap-3"
+                class="flex items-center gap-3 p-4 mx-6 mt-4 border rounded-lg"
                 :class="{
-                    'bg-green-50 border-green-300 text-green-800': notificacao.tipo === 'success',
-                    'bg-red-50 border-red-300 text-red-800': notificacao.tipo === 'error',
-                    'bg-yellow-50 border-yellow-300 text-yellow-800': notificacao.tipo === 'warning',
-                    'bg-blue-50 border-blue-300 text-blue-800': notificacao.tipo === 'info'
+                    'bg-green-50 border-green-300 text-green-800 dark:bg-green-900/30 dark:border-green-700 dark:text-green-300': notificacao.tipo === 'success',
+                    'bg-red-50 border-red-300 text-red-800 dark:bg-red-900/30 dark:border-red-700 dark:text-red-300': notificacao.tipo === 'error',
+                    'bg-yellow-50 border-yellow-300 text-yellow-800 dark:bg-yellow-900/30 dark:border-yellow-700 dark:text-yellow-300': notificacao.tipo === 'warning',
+                    'bg-blue-50 border-blue-300 text-blue-800 dark:bg-blue-900/30 dark:border-blue-700 dark:text-blue-300': notificacao.tipo === 'info'
                 }"
             >
                 <i
@@ -376,7 +368,7 @@ onMounted(() => {
                     }"
                 ></i>
                 <span class="flex-1">{{ notificacao.mensagem }}</span>
-                <button @click="notificacao.show = false" class="text-gray-400 hover:text-gray-600">
+                <button @click="notificacao.show = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -384,12 +376,12 @@ onMounted(() => {
             <!-- Corpo -->
             <div class="p-6">
                 <!-- Alert de Erros Gerais -->
-                <div v-if="Object.keys(errors).length > 0" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <div v-if="Object.keys(errors).length > 0" class="p-3 mb-4 border border-red-200 rounded-lg bg-red-50 dark:bg-red-900/30 dark:border-red-700">
                     <div class="flex items-start gap-2">
                         <i class="fas fa-exclamation-circle text-red-500 mt-0.5"></i>
                         <div>
-                            <p class="text-sm font-medium text-red-800">Por favor, corrija os seguintes erros:</p>
-                            <ul class="mt-1 text-sm text-red-700 list-disc list-inside">
+                            <p class="text-sm font-medium text-red-800 dark:text-red-300">Por favor, corrija os seguintes erros:</p>
+                            <ul class="mt-1 text-sm text-red-700 list-disc list-inside dark:text-red-400">
                                 <li v-for="(error, key) in errors" :key="key">{{ error }}</li>
                             </ul>
                         </div>
@@ -401,7 +393,7 @@ onMounted(() => {
                     <button
                         @click="buscarFornecedor"
                         :disabled="buscando"
-                        class="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        class="flex items-center gap-2 px-4 py-2 font-medium text-white transition-all bg-blue-600 rounded-lg hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <i v-if="buscando" class="fas fa-spinner fa-spin"></i>
                         <i v-else class="fas fa-search"></i>
@@ -409,13 +401,13 @@ onMounted(() => {
                     </button>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
                     <!-- Nome -->
                     <div class="col-span-2">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-building mr-2 text-blue-500"></i>
+                        <label class="block mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                            <i class="mr-2 text-blue-500 fas fa-building"></i>
                             Nome do Fornecedor
-                            <span class="text-red-500 ml-1">*</span>
+                            <span class="ml-1 text-red-500">*</span>
                         </label>
                         <input
                             type="text"
@@ -423,23 +415,24 @@ onMounted(() => {
                             placeholder="Ex: Solotec, Lda"
                             :class="[
                                 'w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all',
-                                errors.nome ? 'border-red-500' : 'border-gray-300'
+                                'bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
+                                errors.nome ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                             ]"
                             @blur="handleBlur"
                             @keyup.enter="buscarFornecedor"
                         >
                         <p v-if="errors.nome" class="mt-1 text-sm text-red-500">
-                            <i class="fas fa-exclamation-circle mr-1"></i>
+                            <i class="mr-1 fas fa-exclamation-circle"></i>
                             {{ errors.nome }}
                         </p>
                     </div>
 
                     <!-- NUIT -->
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-id-card mr-2 text-blue-500"></i>
+                        <label class="block mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                            <i class="mr-2 text-blue-500 fas fa-id-card"></i>
                             NUIT
-                            <span class="text-red-500 ml-1">*</span>
+                            <span class="ml-1 text-red-500">*</span>
                         </label>
                         <input
                             v-model="form.nuit"
@@ -448,21 +441,22 @@ onMounted(() => {
                             maxlength="9"
                             :class="[
                                 'w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all',
-                                errors.nuit ? 'border-red-500' : 'border-gray-300'
+                                'bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
+                                errors.nuit ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                             ]"
                             @blur="handleBlur"
                             @keyup.enter="buscarFornecedor"
                         >
                         <p v-if="errors.nuit" class="mt-1 text-sm text-red-500">
-                            <i class="fas fa-exclamation-circle mr-1"></i>
+                            <i class="mr-1 fas fa-exclamation-circle"></i>
                             {{ errors.nuit }}
                         </p>
                     </div>
 
                     <!-- Email -->
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-envelope mr-2 text-blue-500"></i>
+                        <label class="block mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                            <i class="mr-2 text-blue-500 fas fa-envelope"></i>
                             E-mail
                         </label>
                         <input
@@ -471,13 +465,14 @@ onMounted(() => {
                             placeholder="fornecedor@empresa.com"
                             :class="[
                                 'w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all',
-                                errors.email ? 'border-red-500' : 'border-gray-300'
+                                'bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
+                                errors.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                             ]"
                             @blur="handleBlur"
                             @keyup.enter="buscarFornecedor"
                         >
                         <p v-if="errors.email" class="mt-1 text-sm text-red-500">
-                            <i class="fas fa-exclamation-circle mr-1"></i>
+                            <i class="mr-1 fas fa-exclamation-circle"></i>
                             {{ errors.email }}
                         </p>
                     </div>
@@ -485,15 +480,15 @@ onMounted(() => {
                     <!-- Contactos -->
                     <div class="col-span-2">
                         <div class="flex items-center justify-between mb-3">
-                            <label class="block text-sm font-semibold text-gray-700">
-                                <i class="fas fa-phone-alt mr-2 text-blue-500"></i>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                <i class="mr-2 text-blue-500 fas fa-phone-alt"></i>
                                 Contactos
-                                <span class="text-red-500 ml-1">*</span>
+                                <span class="ml-1 text-red-500">*</span>
                             </label>
                             <button
                                 @click="adicionarContacto"
                                 type="button"
-                                class="inline-flex items-center gap-1 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-all duration-200"
+                                class="inline-flex items-center gap-1 px-3 py-1.5 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white text-sm font-medium rounded-lg transition-all duration-200"
                             >
                                 <i class="fas fa-plus-circle"></i>
                                 Adicionar Contacto
@@ -504,13 +499,13 @@ onMounted(() => {
                             <div
                                 v-for="contacto in contactos"
                                 :key="contacto.id"
-                                class="flex items-start gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-blue-300 transition-all"
-                                :class="{ 'border-red-300 bg-red-50': errors.contactos && contacto.valor === '' }"
+                                class="flex items-start gap-3 p-3 transition-all border border-gray-200 rounded-lg bg-gray-50 dark:bg-gray-700/50 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500"
+                                :class="{ 'border-red-300 bg-red-50 dark:bg-red-900/20 dark:border-red-700': errors.contactos && contacto.valor === '' }"
                             >
                                 <div class="flex-1">
                                     <select
                                         v-model="contacto.tipo"
-                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                        class="w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                                     >
                                         <option value="telefone">📱 Telefone</option>
                                         <option value="celular">📞 Celular</option>
@@ -526,7 +521,8 @@ onMounted(() => {
                                         :placeholder="`Número de ${contacto.tipo}`"
                                         :class="[
                                             'w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm',
-                                            errors.contactos && contacto.valor === '' ? 'border-red-500' : 'border-gray-300'
+                                            'bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
+                                            errors.contactos && contacto.valor === '' ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                                         ]"
                                         @blur="validarFormulario"
                                     >
@@ -539,9 +535,9 @@ onMounted(() => {
                                             name="contacto_principal"
                                             :checked="contacto.principal"
                                             @change="definirPrincipal(contacto.id)"
-                                            class="form-radio text-blue-600 w-4 h-4"
+                                            class="w-4 h-4 text-blue-600 form-radio"
                                         >
-                                        <span class="ml-1 text-xs text-gray-600">Principal</span>
+                                        <span class="ml-1 text-xs text-gray-600 dark:text-gray-400">Principal</span>
                                     </label>
                                 </div>
 
@@ -549,7 +545,7 @@ onMounted(() => {
                                     <button
                                         @click="removerContacto(contacto.id)"
                                         :disabled="contactos.length === 1"
-                                        class="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                        class="p-2 text-red-500 transition-all rounded-lg hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/30 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         <i class="fas fa-trash-alt"></i>
                                     </button>
@@ -558,10 +554,10 @@ onMounted(() => {
                         </div>
 
                         <p v-if="errors.contactos" class="mt-1 text-sm text-red-500">
-                            <i class="fas fa-exclamation-circle mr-1"></i>
+                            <i class="mr-1 fas fa-exclamation-circle"></i>
                             {{ errors.contactos }}
                         </p>
-                        <p class="text-xs text-gray-500 mt-2">
+                        <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
                             <i class="fas fa-info-circle"></i>
                             Adicione pelo menos um contacto. O contacto principal será o preferencial.
                         </p>
@@ -569,8 +565,8 @@ onMounted(() => {
 
                     <!-- Endereço -->
                     <div class="col-span-2">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-map-marker-alt mr-2 text-blue-500"></i>
+                        <label class="block mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                            <i class="mr-2 text-blue-500 fas fa-map-marker-alt"></i>
                             Endereço
                         </label>
                         <input
@@ -579,29 +575,31 @@ onMounted(() => {
                             placeholder="Av. 25 de Setembro, nº 123"
                             :class="[
                                 'w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all',
-                                errors.endereco ? 'border-red-500' : 'border-gray-300'
+                                'bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
+                                errors.endereco ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                             ]"
                             @blur="validarFormulario"
                         >
                         <p v-if="errors.endereco" class="mt-1 text-sm text-red-500">
-                            <i class="fas fa-exclamation-circle mr-1"></i>
+                            <i class="mr-1 fas fa-exclamation-circle"></i>
                             {{ errors.endereco }}
                         </p>
                     </div>
 
                     <!-- Distrito -->
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-city mr-2 text-blue-500"></i>
+                        <label class="block mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                            <i class="mr-2 text-blue-500 fas fa-city"></i>
                             Distrito
-                            <span class="text-red-500 ml-1">*</span>
+                            <span class="ml-1 text-red-500">*</span>
                         </label>
                         <input
                             type="text"
                             placeholder="Digite o distrito"
                             :class="[
                                 'w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all',
-                                errors.distrito ? 'border-red-500' : 'border-gray-300'
+                                'bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
+                                errors.distrito ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                             ]"
                             list="distritos"
                             v-model="distrito"
@@ -613,17 +611,17 @@ onMounted(() => {
                             </option>
                         </datalist>
                         <p v-if="errors.distrito" class="mt-1 text-sm text-red-500">
-                            <i class="fas fa-exclamation-circle mr-1"></i>
+                            <i class="mr-1 fas fa-exclamation-circle"></i>
                             {{ errors.distrito }}
                         </p>
                     </div>
 
                     <!-- Província -->
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-map mr-2 text-blue-500"></i>
+                        <label class="block mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                            <i class="mr-2 text-blue-500 fas fa-map"></i>
                             Província
-                            <span class="text-red-500 ml-1">*</span>
+                            <span class="ml-1 text-red-500">*</span>
                         </label>
                         <input
                             type="text"
@@ -631,7 +629,8 @@ onMounted(() => {
                             list="provincias"
                             :class="[
                                 'w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all',
-                                errors.provincia ? 'border-red-500' : 'border-gray-300'
+                                'bg-white dark:bg-gray-700 text-gray-900 dark:text-white',
+                                errors.provincia ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                             ]"
                             placeholder="Província (auto-preenchido)"
                             readonly
@@ -642,15 +641,15 @@ onMounted(() => {
                             </option>
                         </datalist>
                         <p v-if="errors.provincia" class="mt-1 text-sm text-red-500">
-                            <i class="fas fa-exclamation-circle mr-1"></i>
+                            <i class="mr-1 fas fa-exclamation-circle"></i>
                             {{ errors.provincia }}
                         </p>
                     </div>
 
                     <!-- Status -->
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-toggle-on mr-2 text-blue-500"></i>
+                        <label class="block mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                            <i class="mr-2 text-blue-500 fas fa-toggle-on"></i>
                             Status
                         </label>
                         <div class="flex items-center gap-4 mt-2">
@@ -659,10 +658,10 @@ onMounted(() => {
                                     type="radio"
                                     value="ativo"
                                     v-model="status"
-                                    class="form-radio text-blue-600"
+                                    class="text-blue-600 form-radio"
                                 >
-                                <span class="ml-2 text-sm text-gray-700">
-                                    <i class="fas fa-check-circle text-green-500 mr-1"></i>
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                                    <i class="mr-1 text-green-500 fas fa-check-circle"></i>
                                     Activo
                                 </span>
                             </label>
@@ -671,10 +670,10 @@ onMounted(() => {
                                     type="radio"
                                     value="inativo"
                                     v-model="status"
-                                    class="form-radio text-gray-400"
+                                    class="text-gray-400 form-radio"
                                 >
-                                <span class="ml-2 text-sm text-gray-700">
-                                    <i class="fas fa-ban text-red-500 mr-1"></i>
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                                    <i class="mr-1 text-red-500 fas fa-ban"></i>
                                     Inactivo
                                 </span>
                             </label>
@@ -683,25 +682,25 @@ onMounted(() => {
 
                     <!-- Observações -->
                     <div class="col-span-2">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-comment-dots mr-2 text-blue-500"></i>
+                        <label class="block mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                            <i class="mr-2 text-blue-500 fas fa-comment-dots"></i>
                             Observações
                         </label>
                         <textarea
                             v-model="form.observacoes"
                             rows="3"
                             placeholder="Informações adicionais sobre o fornecedor..."
-                            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none"
+                            class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                         ></textarea>
                     </div>
                 </div>
             </div>
 
             <!-- Rodapé -->
-            <div class="sticky bottom-0 bg-gray-50 flex justify-end gap-3 p-6 border-t border-gray-200 rounded-b-xl">
+            <div class="sticky bottom-0 flex justify-end gap-3 p-6 transition-colors border-t border-gray-200 bg-gray-50 dark:bg-gray-800/80 dark:border-gray-700 rounded-b-xl">
                 <button
                     @click="fecharModal"
-                    class="px-5 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg transition-all duration-200 flex items-center gap-2"
+                    class="px-5 py-2.5 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium rounded-lg transition-all duration-200 flex items-center gap-2"
                 >
                     <i class="fas fa-times"></i>
                     Cancelar
@@ -709,7 +708,7 @@ onMounted(() => {
                 <button
                     @click="guardarFornecedor"
                     :disabled="form.processing"
-                    class="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    class="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 dark:from-blue-700 dark:to-blue-800 dark:hover:from-blue-800 dark:hover:to-blue-900 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     <i v-if="form.processing" class="fas fa-spinner fa-spin"></i>
                     <i v-else class="fas fa-save"></i>

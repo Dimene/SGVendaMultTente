@@ -4,7 +4,10 @@ import { Head, router } from '@inertiajs/vue3';
 import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue';
 import Swal from 'sweetalert2';
 import VueApexCharts from 'vue3-apexcharts';
-
+import { usePermission } from '@/composables/usePermission';
+const { 
+    can
+        }= usePermission();
 // ======================================================
 // PROPS
 // ======================================================

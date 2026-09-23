@@ -268,9 +268,9 @@ public function destroy(Request $request)
     if($outros_Atrib){
 
         // caso tenha fotos
-        // foreach($outros_Atrib->foto as $foto){
-        //     Storage::delete($foto);
-        // }
+        foreach($outros_Atrib->foto as $foto){
+            Storage::delete($foto);
+        }
 
         $outros_Atrib->delete();
     }

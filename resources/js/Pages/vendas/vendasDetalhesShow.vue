@@ -1,8 +1,8 @@
 <template>
   <div class="grid grid-cols-1 tablePane">
     <!-- Verificação de dados antes de renderizar -->
-    <div v-if="!FaturaVenda || !FaturaVenda.Fatura" class="text-center py-8">
-      <i class="fas fa-spinner fa-spin text-3xl text-blue-500"></i>
+    <div v-if="!FaturaVenda || !FaturaVenda.Fatura" class="py-8 text-center">
+      <i class="text-3xl text-blue-500 fas fa-spinner fa-spin"></i>
       <p class="mt-2 text-gray-600">Carregando detalhes da venda...</p>
     </div>
 
@@ -10,9 +10,10 @@
       <!-- <b>Detalhes da Compra</b> -->
       <hr>
 
-      <div class="bg-slate-600 text-white rounded-sm grid grid-cols-1 md:grid-cols-4 gap-2 p-2">
+      <div class="grid grid-cols-1 gap-2 p-2 text-white rounded-sm bg-slate-600 md:grid-cols-4">
         <p class="p-2">
           <b>Fatura-{{ FaturaVenda.Fatura }}</b>
+         
           <small>
             <i>({{ FaturaVenda.Via_pagamento || 'N/A' }} {{ FaturaVenda.referencia || '' }})</i>
           </small>
@@ -33,6 +34,8 @@
           <b>Registada Por:</b>
           {{ FaturaVenda.usuario || 'N/A' }}
         </div>
+
+         <span><b>Cliente:</b>{{FaturaVenda.cliente}}</span>
       </div>
 
       <!-- Tabela de Itens -->
@@ -40,31 +43,33 @@
         <table class="w-full border-collapse">
           <thead class="bg-gray-100">
             <tr>
-              <th class="border p-2 text-left">Nome</th>
-              <th class="border p-2 text-right">Qtd</th>
-              <th class="border p-2 text-right">Preço</th>
-              <th class="border p-2 text-right">IVA</th>
-              <th class="border p-2 text-right">Valor</th>
+              <th class="p-2 text-left border">Nome</th>
+              <th class="p-2 text-right border">Qtd</th>
+              <th class="p-2 text-right border">Preço</th>
+              <th class="p-2 text-right border">IVA</th>
+              <th class="p-2 text-right border">Desconto</th>
+              <th class="p-2 text-right border">Valor</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="(value, index) in venda" :key="index" class="hover:bg-gray-50"   >
-              <td class="border p-2">
+              <td class="p-2 border">
                 <b>{{ getProdutoNome(value) }}</b>
                 <span v-if="value.produto?.produto?.nome">
                   ({{ value.produto.produto.nome }})
                 </span>
               </td>
-              <td class="border p-2 text-right">{{ value.quantidade || 0 }}</td>
-              <td class="border p-2 text-right">{{ formatCurrency(value.preco_unitario) }}</td>
-              <td class="border p-2 text-right">{{ value.iva || 0 }}%</td>
-              <td class="border p-2 text-right">{{ formatCurrency(value.subtotal) }}</td>
+              <td class="p-2 text-right border">{{ value.quantidade || 0 }}</td>
+              <td class="p-2 text-right border">{{ formatCurrency(value.preco_unitario) }}</td>
+              <td class="p-2 text-right border">{{ value.iva || 0 }}%</td>
+              <td class="p-2 text-right border">{{ value.desconto||0 }}%</td>
+              <td class="p-2 text-right border">{{ formatCurrency(value.subtotal) }}</td>
             </tr>
           </tbody>
-          <tfoot class="bg-gray-50 font-bold">
+          <tfoot class="font-bold bg-gray-50">
             <tr>
-              <td colspan="4" class="border p-2 text-right">Total:</td>
-              <td class="border p-2 text-right">
+              <td colspan="5" class="p-2 text-right border">Total:</td>
+              <td class="p-2 text-right border">
                 {{ formatCurrency(calcularTotal) }}
               </td>
             </tr>
@@ -72,22 +77,22 @@
         </table>
       </div>
 
-      <div v-else class="text-center py-4 text-gray-500">
-        <i class="fas fa-box-open text-2xl"></i>
+      <div v-else class="py-4 text-center text-gray-500">
+        <i class="text-2xl fas fa-box-open"></i>
         <p>Nenhum item encontrado nesta venda</p>
       </div>
 
       <!-- Botões de Ação -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 no-print"  v-if="flag===0">
+      <div class="grid grid-cols-1 gap-4 p-4 md:grid-cols-2 no-print"  v-if="flag===0">
         <div>
-          <button class="bg-cyan-700 rounded hover:bg-cyan-800 text-white p-2 w-full" @click="imprimirA5">
+          <button class="w-full p-2 text-white rounded bg-cyan-700 hover:bg-cyan-800" @click="imprimirA5">
             <i class="fas fa-print" aria-hidden="true"></i>
             Imprimir A5
           </button>
         </div>
         <div>
           <button
-            class="bg-blue-600 rounded hover:bg-blue-800 text-white p-2 w-full"
+            class="w-full p-2 text-white bg-blue-600 rounded hover:bg-blue-800"
             @click="reverter(FaturaVenda.id)"
             :disabled="!FaturaVenda.id"
           >
@@ -104,6 +109,7 @@
 import { ref, computed } from "vue";
 import { router } from '@inertiajs/vue3';
 import Swal from 'sweetalert2';
+import { usePage } from '@inertiajs/vue3';
 
 const props = defineProps({
   venda: {
@@ -119,6 +125,9 @@ const props = defineProps({
     default: 0
   }
 });
+
+
+const page = usePage();
 
 // Computed para calcular o total
 const calcularTotal = computed(() => {
@@ -189,8 +198,14 @@ async function reverter(id) {
   }
 }
 
+
+
+
 // Função para imprimir em A5
 function imprimirA5() {
+ 
+
+
   const printContent = document.querySelector('.tablePane');
   if (!printContent) {
     Swal.fire({
@@ -203,7 +218,11 @@ function imprimirA5() {
 
   // Clone do conteúdo
   const contentClone = printContent.cloneNode(true);
+const empresa = page.props?.empresa || {};
 
+const logoUrl = empresa.logo ? `/storage/${empresa.logo}` : null;
+const nomeEmpresa = empresa.nome_fantasia || empresa.nome || 'Empresa';
+ 
   // Remove os botões do clone
   const buttonsContainer = contentClone.querySelector('.no-print');
   if (buttonsContainer) {
@@ -413,7 +432,12 @@ function imprimirA5() {
     <body>
       <div class="print-container">
         <div class="print-header">
-          <h2>FATURA #${props.FaturaVenda.Fatura || ''}</h2>
+        
+
+  <img src="${logoUrl}" alt="${nomeEmpresa}" onerror="this.style.display='none'" style="max-height: 50px; margin-bottom: 5px;" />
+    
+          <p>${page.props.empresa.nome}</p>
+         <h2>FATURA #${props.FaturaVenda.Fatura || ''}</h2>
           <p>${new Date().toLocaleDateString('pt-PT', {
             day: '2-digit',
             month: '2-digit',

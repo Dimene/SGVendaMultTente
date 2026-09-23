@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Empresa;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -29,11 +31,14 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $empresa =Empresa::where("id",1)->first();
+        $usuario=User::where("id",$request->user()?->id??0)->with("roles.permissions")->first();
         return [
             ...parent::share($request),
             'auth' => [
                 'user' => $request->user(),
-            ],
+            ], 'empresa' =>  $empresa,
+            'usuario'=>$usuario,
         ];
     }
 }

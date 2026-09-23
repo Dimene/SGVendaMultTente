@@ -14,12 +14,17 @@ use Inertia\Inertia;
 class FornecedorController extends Controller
 {
 public function index()
+
+
 {
-    return Inertia::render('Compras/FornecedoresIndex', [
-        'fornecedores' => Fornecedor::with(['distrito', 'provincia', 'contactos.tipocontacto'])
+    $fornecdor=Fornecedor::with(['distrito', 'provincia', 'contactos.tipocontacto'])
             ->where('empresa_id', 1)
             ->latest()
-            ->get(),
+            ->get();
+    // dd($fornecdor);
+
+    return Inertia::render('Compras/FornecedoresIndex', [
+        'fornecedores' => $fornecdor, 
         'distritos' => Distrito::orderBy('Nome')->get(['id', 'Nome', 'provincia_id']),
         'provincias' => provincia::orderBy('Nome')->get(['id', 'Nome']),
         'tiposContacto' => tiposContacotos::orderBy('Descricao')->get(['id', 'Descricao']),

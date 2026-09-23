@@ -1,11 +1,17 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-import { router } from '@inertiajs/vue3'
+import { router, usePage } from '@inertiajs/vue3'
 import ApplicationLogo from '@/Components/ApplicationLogo.vue'
 import Dropdown from '@/Components/Dropdown.vue'
+
 import DropdownLink from '@/Components/DropdownLink.vue'
 import { Link } from '@inertiajs/vue3'
-
+import { usePermission } from '@/composables/usePermission';
+import { useEmpresa } from '@/composables/useEmpresa'; 
+const { nomeEmpresa, logoUrl } = useEmpresa(); 
+const { 
+    can
+        }= usePermission();
 const sidebarOpen = ref(true)
 const mobileMenuOpen = ref(false)
 const loading = ref(false)
@@ -52,45 +58,143 @@ const openSubmenus = ref({
 const menuItems = {
     produtos: {
         items: [
-            { name: 'Listar Produtos', route: 'produtos.index', icon: '📋' },
-            { name: 'Cadastrar Produto', route: 'produtos.create', icon: '➕' },
-            { name: 'Categorias', route: 'produtos.categorias', icon: '🏷️' }
+            {
+                name: 'Listar Produtos',
+                route: 'produtos.index',
+                icon: '📋',
+                permission: 'produto-index'
+            },
+            {
+                name: 'Cadastrar Produto',
+                route: 'produtos.create',
+                icon: '➕',
+                permission: 'produto-create'
+            },
+            {
+                name: 'Categorias',
+                route: 'produtos.categorias',
+                icon: '🏷️',
+                permission: 'produto-categoria'
+            }
         ]
     },
+
     vendas: {
         items: [
-            { name: 'Visualizar Vendas', route: 'vendas.index', icon: '👁️' },
-            { name: 'Nova Venda', route: 'vendas.create', icon: '🛒' },
-            { name: 'Relatórios', route: 'vendas.relatorios', icon: '📊' },
-            { name: 'Passar a Loja', route: 'vendas.passarLoja', icon: '🏪' }
+            {
+                name: 'Visualizar Vendas',
+                route: 'vendas.index',
+                icon: '👁️',
+                permission: 'venda-index'
+            },
+            {
+                name: 'Nova Venda',
+                route: 'vendas.create',
+                icon: '🛒',
+                permission: 'venda-create'
+            },
+            {
+                name: 'Relatórios',
+                route: 'vendas.relatorios',
+                icon: '📊',
+                permission: 'venda-relatorio'
+            },
+            {
+                name: 'Passar a Loja',
+                route: 'vendas.passarLoja',
+                icon: '🏪',
+                permission: 'venda-passar-loja'
+            }
         ]
     },
+
     compras: {
         items: [
-            { name: 'Visualizar Compras', route: 'compras.index', icon: '👁️' },
-            { name: 'Registrar Compra', route: 'compras.create', icon: '📝' },
-            { name: 'Relatórios', route: 'compras.relatorios', icon: '📊' },
-          
-            { name: 'Fornecedores', route: 'compras.fornecedores', icon: '🏢' }
+            {
+                name: 'Visualizar Compras',
+                route: 'compras.index',
+                icon: '👁️',
+                permission: 'compra-index'
+            },
+            {
+                name: 'Registrar Compra',
+                route: 'compras.create',
+                icon: '📝',
+                permission: 'compra-create'
+            },
+            {
+                name: 'Relatórios',
+                route: 'compras.relatorios',
+                icon: '📊',
+                permission: 'compra-relatorio'
+            },
+            {
+                name: 'Fornecedores',
+                route: 'compras.fornecedores',
+                icon: '🏢',
+                permission: 'fornecedor-index'
+            }
         ]
     },
+
     financeiro: {
         items: [
-            { name: 'Contas a Pagar', route: 'financeiro.contas-pagar', icon: '📤' },
-            { name: 'Contas a Receber', route: 'financeiro.contas-receber', icon: '📥' },
-            { name: 'Fluxo de Caixa', route: 'financeiro.fluxo-caixa', icon: '💰' },
-            { name: 'Relatórios Financeiros', route: 'financeiro.relatorios', icon: '📊' }
+            {
+                name: 'Contas a Pagar',
+                route: 'financeiro.contas-pagar',
+                icon: '📤',
+                permission: 'financeiro-contas-pagar'
+            },
+            {
+                name: 'Contas a Receber',
+                route: 'financeiro.contas-receber',
+                icon: '📥',
+                permission: 'financeiro-contas-receber'
+            },
+            {
+                name: 'Fluxo de Caixa',
+                route: 'financeiro.fluxo-caixa',
+                icon: '💰',
+                permission: 'financeiro-fluxo-caixa'
+            },
+            {
+                name: 'Relatórios Financeiros',
+                route: 'financeiro.relatorios',
+                icon: '📊',
+                permission: 'financeiro-relatorio'
+            }
         ]
     },
+
     configuracoes: {
         items: [
-            { name: 'Dados da Empresa', route: 'configuracoes.empresa', icon: '🏢' },
-            { name: 'Usuários', route: 'configuracoes.usuarios', icon: '👥' },
-            { name: 'Permissões', route: 'configuracoes.permissoes', icon: '🔐' },
-            { name: 'Backup', route: 'configuracoes.backup', icon: '💾' }
+            {
+                name: 'Dados da Empresa',
+                route: 'configuracoes.empresa',
+                icon: '🏢',
+                permission: 'empresa-show'
+            },
+            {
+                name: 'Usuários',
+                route: 'usuario.index',
+                icon: '👥',
+                permission: 'usuario-index'
+            },
+            {
+                name: 'Permissões',
+                route: 'roles.index',
+                icon: '🔐',
+                permission: 'role-index'
+            },
+            {
+                name: 'Backup',
+                route: 'configuracoes.backup',
+                icon: '💾',
+                permission: 'backup-create'
+            }
         ]
     }
-}
+};
 
 // Função para verificar se um item está ativo
 const isActive = (routePattern) => {
@@ -262,11 +366,18 @@ const checkScreenSize = () => {
 
 // Lifecycle hooks
 onMounted(() => {
+
+
+    // console.log(menuItems);
+  
     checkScreenSize()
     window.addEventListener('resize', checkScreenSize)
     setTimeout(initializeOpenSubmenus, 100)
     initDarkMode() // Inicializar tema escuro
 })
+
+
+
 
 onBeforeUnmount(() => {
     window.removeEventListener('resize', checkScreenSize)
@@ -279,6 +390,11 @@ const shouldShowFloating = (menu) => {
     return hoveredMenu.value === menu || (isMenuActive(menu) && openSubmenus.value[menu])
 }
 
+
+   
+
+
+
 // Computed para controlar a visibilidade da sidebar
 const sidebarVisible = computed(() => {
     if (isMobile.value) {
@@ -286,6 +402,83 @@ const sidebarVisible = computed(() => {
     }
     return sidebarOpen.value
 })
+
+
+
+function validarsubmenun(submen) {
+    const dadospermissoes = usePage().props.usuario;
+
+    let validar = true;
+
+    const role = dadospermissoes.roles
+        .map(role => role.name)
+        .some(item => item == "Admin");
+
+    if (!role) {
+        const dados = dadospermissoes.roles
+            .flatMap(role => role.permissions);
+
+        validar = dados.some(item => item.group == submen);
+    }
+
+    return validar;
+}
+
+function validarItem(permission) {
+
+    const usuario = usePage().props.usuario;
+
+    if (!usuario) {
+        return false;
+    }
+
+    // Admin vê tudo
+    const isAdmin = (usuario.roles ?? []).some(
+        role => role.name === 'Admin'
+    );
+
+    if (isAdmin) {
+        return true;
+    }
+
+    const permissoes = (usuario.roles ?? []).flatMap(
+        role => role.permissions ?? []
+    );
+
+
+    return permissoes.some(
+        item => item.name === permission
+    );
+}
+
+
+function validarMenuItem(permission) {
+    const usuario = usePage().props.usuario;
+
+   
+    let resultado = true;
+
+    const role = usuario.roles
+        .map(role => role.name)
+        .some(item => item == "Admin");
+
+        if(!role){
+
+    
+    const permissoes = (usuario?.roles ?? [])
+        .flatMap(role => role.permissions ?? []);
+
+    console.log('Permissões encontradas:', permissoes);
+
+    resultado = permissoes.some(
+        item => item.name === permission
+    );
+
+    // console.log('TEM PERMISSÃO?', resultado);
+    }
+
+    return resultado;
+}
 </script>
 
 <template>
@@ -343,7 +536,7 @@ const sidebarVisible = computed(() => {
                 @mouseenter="showFloatingSubmenu(null)"
                 @mouseleave="hideFloatingSubmenu"
             >
-                <button
+                <button  v-if="can('Dashboard')"
                     @click="navigateWithLoading(route('dashboard.index'), 'Dashboard')"
                     class="w-full group flex items-center px-3 py-2.5 rounded-xl transition-all duration-200 hover:bg-white/10 relative"
                     :class="[
@@ -367,14 +560,15 @@ const sidebarVisible = computed(() => {
                         </div>
                         <span v-show="sidebarOpen || isMobile" class="text-sm font-medium">Dashboard</span>
                     </div>
-                    <div v-if="!sidebarOpen && !isMobile" class="absolute z-50 px-2 py-1 text-xs text-white transition-opacity rounded opacity-0 left-14 bg-slate-700 group-hover:opacity-100 whitespace-nowrap">
+                    <div    v-if="!sidebarOpen && !isMobile" class="absolute z-50 px-2 py-1 text-xs text-white transition-opacity rounded opacity-0 left-14 bg-slate-700 group-hover:opacity-100 whitespace-nowrap">
                         Dashboard
+                       
                     </div>
                 </button>
             </div>
 
             <!-- Clientes -->
-            <div
+            <!-- <div   v-if="can('cliente-index')"
                 class="relative"
                 @mouseenter="showFloatingSubmenu(null)"
                 @mouseleave="hideFloatingSubmenu"
@@ -407,10 +601,10 @@ const sidebarVisible = computed(() => {
                         Clientes
                     </div>
                 </button>
-            </div>
+            </div> -->
 
             <!-- Estoque -->
-            <div
+            <div   v-if="can('compra-inventario')"
                 class="relative"
                 @mouseenter="showFloatingSubmenu(null)"
                 @mouseleave="hideFloatingSubmenu"
@@ -446,12 +640,12 @@ const sidebarVisible = computed(() => {
             </div>
 
             <!-- Vendas -->
-            <div
+            <div   v-if="validarsubmenun('venda')"
                 class="relative"
                 @mouseenter="showFloatingSubmenu('vendas')"
                 @mouseleave="hideFloatingSubmenu"
             >
-                <button
+                <button 
                     @click="sidebarOpen ? toggleSubmenu('vendas') : null"
                     class="w-full group flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 hover:bg-white/10 relative"
                     :class="[
@@ -497,12 +691,14 @@ const sidebarVisible = computed(() => {
                 >
                     <button
                         v-for="item in menuItems.vendas.items"
+                        
                         :key="item.route"
+                        
                         @click="navigateWithLoading(route(item.route), item.name)"
                         class="w-full text-left px-4 py-2.5 text-gray-300 hover:text-white hover:bg-white/10 transition-all text-sm flex items-center gap-2"
                         :class="{ 'bg-white/5 text-white': route().current(item.route) }"
-                    >
-                        <span>{{ item.icon }}</span>
+                       v-show="validarMenuItem(item.permission)" >
+                        <span >{{ item.icon }}</span>
                         <span>{{ item.name }}</span>
                         <div
                             v-if="route().current(item.route)"
@@ -516,7 +712,7 @@ const sidebarVisible = computed(() => {
                     v-show="(sidebarOpen || isMobile) && openSubmenus.vendas"
                     class="pl-3 mt-1 ml-8 space-y-1 border-l border-white/10 dark:border-white/5"
                 >
-                    <button
+                    <button   v-show="validarMenuItem(item.permission)" 
                         v-for="item in menuItems.vendas.items"
                         :key="item.route"
                         @click="navigateWithLoading(route(item.route), item.name)"
@@ -534,7 +730,7 @@ const sidebarVisible = computed(() => {
             </div>
 
             <!-- Compras -->
-            <div
+            <div  v-if="validarsubmenun('compra')"
                 class="relative"
                 @mouseenter="showFloatingSubmenu('compras')"
                 @mouseleave="hideFloatingSubmenu"
@@ -623,7 +819,7 @@ const sidebarVisible = computed(() => {
             </div>
 
             <!-- Financeiro -->
-            <div
+            <div  v-if="validarsubmenun('financeiro')"
                 class="relative"
                 @mouseenter="showFloatingSubmenu('financeiro')"
                 @mouseleave="hideFloatingSubmenu"
@@ -712,7 +908,7 @@ const sidebarVisible = computed(() => {
             </div>
 
             <!-- Configurações -->
-            <div
+            <div  v-if="validarsubmenun('configuracao')"
                 class="relative"
                 @mouseenter="showFloatingSubmenu('configuracoes')"
                 @mouseleave="hideFloatingSubmenu"
@@ -850,7 +1046,17 @@ const sidebarVisible = computed(() => {
 
                 <!-- Título da página -->
                 <div class="hidden text-lg font-semibold text-gray-800 dark:text-gray-200 md:block">
-                    <slot name="header"></slot>
+                    <slot name="header">
+                        <div class="flex items-center gap-2">
+                            <span class="flex items-center justify-center w-8 h-8 text-sm text-white rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500">
+                                <i class="fas fa-chart-line" aria-hidden="true"></i>
+                            </span>
+                            <div>
+                                <p class="text-sm font-semibold">ERP System</p>
+                                <p class="text-xs font-normal text-gray-500 dark:text-gray-400">Gestão comercial</p>
+                            </div>
+                        </div>
+                    </slot>
                 </div>
 
                 <!-- Informações do usuário -->

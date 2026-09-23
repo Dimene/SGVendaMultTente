@@ -7,8 +7,11 @@ use App\Http\Controllers\FornecedorController;
 use App\Http\Controllers\homecontroller;
 use App\Http\Controllers\EstoqueController;
 use App\Http\Controllers\EmpresaController;
+use App\Http\Controllers\permissoesController;
 use App\Http\Controllers\ProdutoController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\roleController;
+use App\Http\Controllers\UsuarioController;
 use App\Http\Controllers\vendascontroler;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -23,16 +26,24 @@ Route::get('/', function () {
     ]);
 });
 
+Route::post('/cadastrousuario', [UsuarioController::class, 'store'])
+    ->middleware(['auth', 'verified'])->name('cadastrousuario');
+    
+  
 // Route::get('/dashboard', function () {
    
 // })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
 
-Route::resource("dashboard",homecontroller::class);
+Route::get('/', [HomeController::class, 'index'])
+    ->name('dashboard');
+
+Route::get('/dashboard', [HomeController::class, 'index'])
+    ->name('dashboard.index');
     Route::get('/estoque', [EstoqueController::class, 'index'])->name('estoque.index');
     Route::get('/configuracoes/empresa', [EmpresaController::class, 'index'])->name('configuracoes.empresa');
-    Route::post('/configuracoes/empresa/{empresa}', [EmpresaController::class, 'update'])->name('configuracoes.empresa.update');
+    Route::post('/configuracoes/empresa/guardar/{empresa}', [EmpresaController::class, 'update'])->name('configuracoes.empresa.update');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -44,7 +55,7 @@ Route::resource("dashboard",homecontroller::class);
      Route::get('/dadoscompra',[CompraController::class,"dadosCompra"])->name('compras.dados');
 
     Route::resource('fornecedor',FornecedorController::class);
-    Route::get('/compras/fornecedores', [FornecedorController::class, 'index'])->name('compras.fornecedores');
+    Route::get('/compras/fornecedores/all', [FornecedorController::class, 'index'])->name('compras.fornecedores');
     Route::resource('vendas',vendascontroler::class);
     Route::resource('clientes', ClienteController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::get('/vendas/reverter/vendas/{id}',[vendascontroler::class,'reverter'])->name('vendas.reverter');
@@ -65,15 +76,28 @@ Route::post('/Produto', [ProdutoController::class, 'store']);
     Route::get("/categoria/create",[CategoriaController::class,"create"]);
     Route::post("/categoria/store",[CategoriaController::class,"store"])->name("categoria.store");
 
+Route::resource('roles', roleController::class);
+
+Route::get('roles/lista/dados', [roleController::class, 'index'])
+    ->name('roles.lista.dados');
 
 
+Route::get('roles/mostrar/elementos', [roleController::class, 'mostrar'])
+    ->name('roles.mostrar');
+
+    Route::resource('permissoes', permissoesController::class);
 Route::delete('/produtos/{id}', [ProdutoController::class, 'destroy'])
     ->name('produtos.destroy');
 
 
     Route::get('/produtos/modelo/import{id}', [ProdutoController::class, 'import'])
     ->name('produtos.import');
+
+
+    Route::resource('usuario',UsuarioController::class);
+    Route::post('usuario/resete/{usuario}',[UsuarioController::class,'resetarSenha'])->name('usuario.resetarSenha');
     // Route::resource('contas', fechamentocontaController::class)
 });
 
-require __DIR__.'/auth.php';
+
+ require __DIR__.'/auth.php';

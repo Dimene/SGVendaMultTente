@@ -4,12 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Cliente;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class ClienteController extends Controller
 {
 public function index()
 {
-    return Cliente::latest()->paginate(20);
+   $Cliente=  Cliente::get();
+    return  Inertia::render('cliente.ClientesIndex',["Cliente"=>$Cliente]);
 }
 
 public function store(Request $request)
