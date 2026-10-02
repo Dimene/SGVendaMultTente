@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Produto;
+
 
 class produtoitems extends Model
 {
@@ -29,7 +31,7 @@ class produtoitems extends Model
         return $this->hasOne(loja::class,'produtoitem_id','id');
     }
     public function produto(){
-        return $this->hasOne(produto::class,'id','produto_id');
+        return $this->hasOne(Produto::class,'id','produto_id');
 
 
     } public function outrosatributos(){
