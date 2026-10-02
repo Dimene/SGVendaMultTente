@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import RoleForm from '@/Pages/Roles/RoleForm.vue';
+import RoleForm from '@/roles/RoleForm.vue';
 import { ref, computed } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { AgGridVue } from 'ag-grid-vue3';
