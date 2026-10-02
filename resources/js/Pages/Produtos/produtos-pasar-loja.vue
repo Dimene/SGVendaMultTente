@@ -33,7 +33,7 @@ const lojaSelecionada = ref(null);
 
 // ============ DADOS PARA IMPRESSÃO ============
 const comprovativoData = ref({
-    loja: null,          // objeto da loja
+    loja: null,
     itens: [],
     total: 0,
     data: '',
@@ -78,6 +78,45 @@ const adicionarAoCarrinho = (produto) => {
         });
         produtoLocal.estoque -= 1;
     }
+    activeTab.value = 'adicionados';
+    isPanelOpen.value = true;
+};
+
+// ============ NOVO: ADICIONAR TODA A QUANTIDADE ============
+const adicionarTudoAoCarrinho = (produto) => {
+    if (!produto) return;
+    const produtoLocal = produtosData.value.find(p => p.id === produto.id);
+    if (!produtoLocal) return;
+
+    const estoqueAtual = produtoLocal.estoque || 0;
+    if (estoqueAtual <= 0) {
+        Swal.fire('Sem estoque', 'Produto sem estoque disponível!', 'warning');
+        return;
+    }
+
+    const existe = produtosAdicionados.value.find(p => p.id === produto.id);
+
+    if (existe) {
+        existe.quantidade = (existe.quantidade || 0) + estoqueAtual;
+    } else {
+        produtosAdicionados.value.push({
+            ...produto,
+            quantidade: estoqueAtual,
+            adicionado_em: new Date().toISOString()
+        });
+    }
+
+    // Zera o stock local (tudo foi para o carrinho)
+    produtoLocal.estoque = 0;
+
+    Swal.fire({
+        icon: 'success',
+        title: 'Adicionado!',
+        text: `${estoqueAtual} unidade(s) de ${produto.produto?.nome || produto.nome || 'produto'} adicionadas ao carrinho.`,
+        timer: 1800,
+        showConfirmButton: false
+    });
+
     activeTab.value = 'adicionados';
     isPanelOpen.value = true;
 };
@@ -275,39 +314,34 @@ const finalizarCompra = async () => {
     };
 
     try {
-    const responsive= await axios.post('/vendas/adicionar/lojas', payload, {
+        const responsive = await axios.post('/vendas/adicionar/lojas', payload, {
             headers: { 'Content-Type': 'application/json' }
         });
 
-        // Guarda os dados para impressão antes de limpar o carrinho
         prepararComprovativo(responsive.data);
 
-        // Limpa o carrinho e a seleção de loja
         produtosAdicionados.value = [];
         lojaSelecionada.value = null;
 
-        // Mostra o SweetAlert com opção de imprimir
+        if (responsive.data.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Venda finalizada!',
+                text: 'Produtos transferidos com sucesso.',
+                showCancelButton: true,
+                confirmButtonText: '<i class="fas fa-print"></i> Imprimir comprovativo',
+                cancelButtonText: 'Fechar',
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#6c757d',
+                allowOutsideClick: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    imprimirComprovativo(comprovativoData.value);
+                }
+            });
 
-        if(responsive.data.success){
-        Swal.fire({
-            icon: 'success',
-            title: 'venda finalizada!',
-            text: 'Produtos transferidos com sucesso.',
-            showCancelButton: true,
-            confirmButtonText: '<i class="fas fa-print"></i> Imprimir comprovativo',
-            cancelButtonText: 'Fechar',
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#6c757d',
-            allowOutsideClick: false
-        }).then((result) => {
-            if (result.isConfirmed) {
-                imprimirComprovativo(comprovativoData.value);
-            }
-        });
-
-
-        fecharPainel();
-    }
+            fecharPainel();
+        }
     } catch (error) {
         console.error('Erro ao finalizar compra:', error);
         Swal.fire('Erro', 'Ocorreu um erro ao finalizar a compra. Tente novamente.', 'error');
@@ -387,14 +421,17 @@ const colunastabela = [
         headerName: "Ações",
         sortable: false,
         filter: false,
-        width: 140,
+        width: 200,
         cellRenderer: () => `
             <div class="flex justify-center gap-1">
-                <button class="px-2 py-1 text-xs text-white transition-colors bg-blue-500 rounded btn-adicionar hover:bg-blue-600">
+                <button class="px-2 py-1 text-xs text-white transition-colors bg-blue-500 rounded btn-adicionar hover:bg-blue-600" title="Adicionar 1 ao carrinho">
                     <i class="fas fa-shopping-bag"></i>
                 </button>
-                <button class="px-2 py-1 text-xs text-white transition-colors bg-green-500 rounded btn-visualizar hover:bg-green-600">
+                <button class="px-2 py-1 text-xs text-white transition-colors bg-green-500 rounded btn-visualizar hover:bg-green-600" title="Visualizar">
                     <i class="fas fa-eye"></i>
+                </button>
+                <button class="px-2 py-1 text-xs text-white transition-colors bg-orange-500 rounded btn-adicionar-tudo hover:bg-orange-600" title="Adicionar TODA a quantidade ao carrinho">
+                    <i class="fas fa-layer-group"></i>
                 </button>
             </div>
         `,
@@ -403,6 +440,7 @@ const colunastabela = [
             if (!button) return;
             if (button.classList.contains("btn-adicionar")) adicionarAoCarrinho(params.data);
             if (button.classList.contains("btn-visualizar")) selecionarProduto(params.data);
+            if (button.classList.contains("btn-adicionar-tudo")) adicionarTudoAoCarrinho(params.data);
         }
     }
 ];
@@ -583,7 +621,6 @@ const getStatusBadgeColor = (estoque) => {
                     <!-- CONTEÚDO: ABA DETALHES -->
                     <div v-show="activeTab === 'detalhes'" class="flex-1 p-4 space-y-4 overflow-y-auto">
                         <div v-if="selectedProduct" class="space-y-4">
-                            <!-- Cards de info (mantido igual ao original) -->
                             <div class="grid grid-cols-2 gap-3">
                                 <div class="p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
                                     <label class="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nome</label>
@@ -613,7 +650,6 @@ const getStatusBadgeColor = (estoque) => {
                                 </div>
                             </div>
 
-                            <!-- Preços -->
                             <div class="grid grid-cols-2 gap-3">
                                 <div class="p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
                                     <label class="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Preço Compra</label>
@@ -637,7 +673,6 @@ const getStatusBadgeColor = (estoque) => {
                                 </div>
                             </div>
 
-                            <!-- Margem de lucro -->
                             <div class="p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
                                 <label class="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Margem de Lucro</label>
                                 <div class="flex items-center gap-3 mt-1">
@@ -654,7 +689,6 @@ const getStatusBadgeColor = (estoque) => {
                                 </div>
                             </div>
 
-                            <!-- Atributos -->
                             <div v-if="Object.keys(extrairAtributos(selectedProduct)).length > 0" class="p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
                                 <label class="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-2">🔧 Especificações</label>
                                 <div class="grid grid-cols-2 gap-2 mt-2">
@@ -669,7 +703,6 @@ const getStatusBadgeColor = (estoque) => {
                                 </div>
                             </div>
 
-                            <!-- Fotos -->
                             <div v-if="obterFotos(selectedProduct).length > 0" class="p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
                                 <label class="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-2">📸 Fotos</label>
                                 <div class="flex gap-2 pb-2 mt-2 overflow-x-auto">
@@ -683,7 +716,6 @@ const getStatusBadgeColor = (estoque) => {
                                 </div>
                             </div>
 
-                            <!-- Status -->
                             <div class="flex flex-wrap items-center gap-2 p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
                                 <span class="text-xs font-medium text-gray-700 dark:text-gray-300">Status:</span>
                                 <span class="px-2 py-0.5 rounded-full text-[10px] font-medium flex items-center gap-1"
@@ -694,19 +726,30 @@ const getStatusBadgeColor = (estoque) => {
                                 <span class="text-[10px] text-gray-500 ml-auto">Criado: {{ formatarData(selectedProduct?.created_at) }}</span>
                             </div>
 
-                            <button @click="adicionarAoCarrinho(selectedProduct)"
-                                    class="w-full py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center justify-center gap-2 text-sm font-medium">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
-                                </svg>
-                                Adicionar ao Carrinho
-                            </button>
+                            <!-- BOTÕES DE AÇÃO -->
+                            <div class="flex flex-col gap-2">
+                                <button @click="adicionarAoCarrinho(selectedProduct)"
+                                        class="w-full py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center justify-center gap-2 text-sm font-medium">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                    </svg>
+                                    Adicionar 1 ao Carrinho
+                                </button>
+
+                                <button @click="adicionarTudoAoCarrinho(selectedProduct)"
+                                        class="w-full py-2.5 rounded-lg bg-orange-500 hover:bg-orange-600 text-white transition-colors flex items-center justify-center gap-2 text-sm font-medium"
+                                        :disabled="(selectedProduct?.estoque || 0) <= 0">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                                    </svg>
+                                    Adicionar TUDO ({{ selectedProduct?.estoque || 0 }} un.)
+                                </button>
+                            </div>
                         </div>
                     </div>
 
                     <!-- CONTEÚDO: ABA ADICIONADOS -->
                     <div v-show="activeTab === 'adicionados'" class="flex-1 p-4 overflow-y-auto">
-                        <!-- Seletor de lojas -->
                         <div class="mb-4">
                             <label for="loja" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                 Selecione a Loja
@@ -727,7 +770,6 @@ const getStatusBadgeColor = (estoque) => {
                             </select>
                         </div>
 
-                        <!-- Lista do carrinho -->
                         <div v-if="produtosAdicionados.length === 0" class="flex flex-col items-center justify-center h-full text-center">
                             <div class="mb-3 text-5xl">🛒</div>
                             <h5 class="text-sm font-semibold text-gray-800 dark:text-white">Carrinho vazio</h5>
@@ -772,7 +814,6 @@ const getStatusBadgeColor = (estoque) => {
                                 </div>
                             </div>
 
-                            <!-- Totais e botões -->
                             <div class="sticky bottom-0 pt-3 mt-3 bg-white border-t border-gray-200 dark:bg-gray-800 dark:border-gray-700">
                                 <div class="flex items-center justify-between p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20">
                                     <span class="text-sm font-bold text-gray-800 dark:text-white">Total</span>
@@ -849,7 +890,6 @@ const getStatusBadgeColor = (estoque) => {
 </template>
 
 <style scoped>
-/* Estilos existentes mantidos... */
 @keyframes pulse {
     0%, 100% { opacity: 1; transform: scale(1); }
     50% { opacity: 0.5; transform: scale(1.2); }
@@ -869,93 +909,55 @@ const getStatusBadgeColor = (estoque) => {
 .overflow-x-auto::-webkit-scrollbar { height: 4px; }
 .overflow-x-auto::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
 
-/* ======= ESTILOS PARA IMPRESSÃO ======= */
 @media print {
-    @page {
-        size: A4 portrait;
-        margin: 12mm;
-    }
-
-    /* Esconde tudo o que não é a área de impressão */
-    body * {
-        visibility: hidden;
-    }
-    #print-area, #print-area * {
-        visibility: visible;
-    }
+    @page { size: A4 portrait; margin: 12mm; }
+    body * { visibility: hidden; }
+    #print-area, #print-area * { visibility: visible; }
     #print-area {
         display: block !important;
-        position: fixed;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        background: white;
-        z-index: 9999;
-        overflow: auto;
-        padding: 20px;
+        position: fixed; left: 0; top: 0;
+        width: 100%; height: 100%;
+        background: white; z-index: 9999;
+        overflow: auto; padding: 20px;
     }
-    /* Remove margens extras */
     .comprovativo-wrapper {
-        display: flex;
-        justify-content: center;
-        align-items: flex-start;
-        min-height: 100vh;
+        display: flex; justify-content: center;
+        align-items: flex-start; min-height: 100vh;
     }
     .comprovativo {
-        max-width: 190mm;
-        width: 100%;
-        background: white;
-        padding: 10mm;
+        max-width: 190mm; width: 100%;
+        background: white; padding: 10mm;
         font-family: Arial, Helvetica, sans-serif;
         color: #333;
     }
     .comprovativo .header {
         text-align: center;
         border-bottom: 2px solid #333;
-        padding-bottom: 15px;
-        margin-bottom: 20px;
+        padding-bottom: 15px; margin-bottom: 20px;
     }
     .comprovativo .header h1 {
         margin: 0 0 10px 0;
-        font-size: 22px;
-        color: #1a56db;
+        font-size: 22px; color: #1a56db;
     }
-    .comprovativo .header p {
-        margin: 5px 0;
-        font-size: 12px;
-    }
+    .comprovativo .header p { margin: 5px 0; font-size: 12px; }
     .tabela-itens {
-        width: 100%;
-        border-collapse: collapse;
-        margin: 16px 0;
-        font-size: 11px;
+        width: 100%; border-collapse: collapse;
+        margin: 16px 0; font-size: 11px;
     }
-    .tabela-itens th,
-    .tabela-itens td {
+    .tabela-itens th, .tabela-itens td {
         border: 1px solid #ccc;
-        padding: 7px 8px;
-        text-align: left;
+        padding: 7px 8px; text-align: left;
     }
-    .tabela-itens th {
-        background: #f0f0f0;
-        font-weight: bold;
-    }
+    .tabela-itens th { background: #f0f0f0; font-weight: bold; }
     .tabela-itens tfoot td {
         border-top: 2px solid #333;
         padding: 12px 10px;
     }
     .comprovativo .footer {
-        margin-top: 24px;
-        text-align: center;
+        margin-top: 24px; text-align: center;
         border-top: 1px solid #ddd;
-        padding-top: 15px;
-        font-size: 13px;
-        color: #666;
+        padding-top: 15px; font-size: 13px; color: #666;
     }
-    .comprovativo .footer .small {
-        font-size: 11px;
-        color: #999;
-    }
+    .comprovativo .footer .small { font-size: 11px; color: #999; }
 }
 </style>

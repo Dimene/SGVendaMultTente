@@ -22,7 +22,7 @@ Route::get('/', function () {
         'canLogin' => Route::has('login'),
         'canRegister' => Route::has('register'),
         'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
+        'phpVersion' => PHP_VERSION
     ]);
 });
 
@@ -42,6 +42,7 @@ Route::get('/', [HomeController::class, 'index'])
 Route::get('/dashboard', [HomeController::class, 'index'])
     ->name('dashboard.index');
     Route::get('/estoque', [EstoqueController::class, 'index'])->name('estoque.index');
+    Route::get('/estoque/visualizar', [EstoqueController::class, 'visualizar'])->name('estoque.visualizar');
     Route::get('/configuracoes/empresa', [EmpresaController::class, 'index'])->name('configuracoes.empresa');
     Route::post('/configuracoes/empresa/guardar/{empresa}', [EmpresaController::class, 'update'])->name('configuracoes.empresa.update');
 
@@ -57,6 +58,9 @@ Route::get('/dashboard', [HomeController::class, 'index'])
     Route::resource('fornecedor',FornecedorController::class);
     Route::get('/compras/fornecedores/all', [FornecedorController::class, 'index'])->name('compras.fornecedores');
     Route::resource('vendas',vendascontroler::class);
+    Route::get('vendas/efetuar/{loja}',[vendascontroler::class,'create'])->name('vendas.efetuar');
+    Route::get('vendas/efetuar/{loja}',[vendascontroler::class,'create'])->name('vendas.efetuar');
+    
     Route::resource('clientes', ClienteController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::get('/vendas/reverter/vendas/{id}',[vendascontroler::class,'reverter'])->name('vendas.reverter');
 
@@ -65,10 +69,12 @@ Route::get('/dashboard', [HomeController::class, 'index'])
     Route::get('/vendas/relatorios/mostrar',[vendascontroler::class,'relatorios'])->name('vendas.relatorios');
     Route::get('/vendas/passar/loja',[vendascontroler::class,'passarLoja'])->name('vendas.passarLoja');
     Route::post('/vendas/adicionar/lojas',[vendascontroler::class,'addicionarlojas'])->name('vendas.addicionarlojas');
-    Route::get('/vendas/relatorio/dados/{dataInicial?}/{DataFinal?}',
+    Route::get('/vendas/relatorio/dados/{id?}/{dataInicial?}/{DataFinal?}',
     [vendascontroler::class,'relatorioDados'])->name('vendas.relatorioDados');
     Route::resource('Produto',ProdutoController::class);
 Route::post('/Produto', [ProdutoController::class, 'store']);
+// routes/web.php
+Route::get('/produtos/modelo/import/{grupo}', [ProdutoController::class, 'gerarModeloImport']);
 
     Route::get('/registo/produtos/{nome}',[ProdutoController::class,'create'])->name('produtos.create');
     // Route::post('/produtos/store',[ProdutoController::class,'store'])->name('produtos.store');
@@ -96,6 +102,7 @@ Route::delete('/produtos/{id}', [ProdutoController::class, 'destroy'])
 
     Route::resource('usuario',UsuarioController::class);
     Route::post('usuario/resete/{usuario}',[UsuarioController::class,'resetarSenha'])->name('usuario.resetarSenha');
+    Route::get('usuario/resete/senha',[UsuarioController::class,'resetarSenhapessoal'])->name('usuario.resetarSenhapessoal');
     // Route::resource('contas', fechamentocontaController::class)
 });
 

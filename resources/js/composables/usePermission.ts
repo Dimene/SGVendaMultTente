@@ -31,8 +31,17 @@ export function usePermission() {
             return true;
         }
 
+
+         const todas = user.value.roles.flatMap(
+        (role: any) =>
+            (role.permissions ?? []).map(
+                (permission: any) => permission.name
+            )
+    );
+
+   
         // Verifica a permissão atribuída
-        return user.value.permissions?.includes(permissao) ?? false;
+        return todas.includes(permissao) ?? false;
     };
 
     /**

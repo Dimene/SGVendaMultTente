@@ -2,49 +2,112 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Armazem;
+use App\Models\loja_desc;
+use App\Models\Produto;
 use App\Models\produtoitems;
 use Inertia\Inertia;
+use PHPUnit\TextUI\Configuration\Merger;
 
 class EstoqueController extends Controller
 {
-    public function index()
-    {
-        $inventario = produtoitems::query()
-            ->with(['produto.categoria', 'produtoloja.loja'])
-            ->get()
-            ->map(function (produtoitems $item) {
-                $armazem = (int) ($item->estoque ?? 0);
-                $loja = (int) ($item->produtoloja?->Quantidade ?? 0);
-                $quantidadeTotal = $armazem + $loja;
-                $precoVenda1 = (float) ($item->preco_venda1 ?? 0);
-                $precoVenda2 = (float) ($item->preco_venda2 ?? 0);
-                $iva = (float) ($item->iva ?? 0);
+   
 
-                $receitaVenda1 = $quantidadeTotal * $precoVenda1;
-                $receitaVenda2 = $quantidadeTotal * $precoVenda2;
 
-                return [
-                    'id' => $item->id,
-                    'produto' => $item->produto?->nome ?? 'Produto sem nome',
-                    'categoria' => $item->produto?->categoria?->nome ?? 'Sem categoria',
-                    'armazem' => $armazem,
-                    'loja' => $loja,
-                    'quantidade_total' => $quantidadeTotal,
-                    'preco_venda1' => $precoVenda1,
-                    'preco_venda2' => $precoVenda2,
-                    'iva_percentual' => $iva,
-                    'receita_venda1' => round($receitaVenda1, 2),
-                    'iva_venda1' => round($receitaVenda1 * $iva / 100, 2),
-                    'receita_venda2' => round($receitaVenda2, 2),
-                    'iva_venda2' => round($receitaVenda2 * $iva / 100, 2),
-                    'loja_nome' => $item->produtoloja?->loja?->Desc,
-                ];
-            })
-            ->filter(fn (array $item) => $item['quantidade_total'] > 0)
-            ->values();
+public function dadosinventario()
+{
+    $produtos = Produto::with('produtoitems.produtoloja')->get();
 
-        return Inertia::render('Estoque/EstoqueIndex', [
-            'inventario' => $inventario,
-        ]);
+    $armazems = Armazem::all();
+    $lojas = loja_desc::all();
+
+    $collect = collect();
+
+    foreach ($produtos as $produto) {
+$quantidade_total=0;
+        $produtoItem = [
+            'id' => $produto->id,
+            'nome' => $produto->nome,
+            'categoria' => $produto->categoria()->first()->nome,
+        ];
+
+        /*
+        |--------------------------------------------------------------------------
+        | ARMAZÉNS
+        |--------------------------------------------------------------------------
+        */
+        foreach ($armazems as $armazem) {
+ $qntdarmazem=$produto->produtoitems
+                    ->where('Armazem_id', $armazem->id)
+                    ->sum('estoque');
+            $produtoItem[$armazem->id . 'armazem'] =$qntdarmazem;
+               
+                    $quantidade_total=$quantidade_total+ $qntdarmazem;
+   $dadosarmazem=$produto->produtoitems
+                    ->where('Armazem_id', $armazem->id)->first();
+
+                    $produtoItem["preco_venda1"]= $dadosarmazem->preco_venda1;
+                     $produtoItem["preco_venda2"]= $dadosarmazem->preco_venda2;
+                    $produtoItem["iva_percentual"] =$dadosarmazem->iva; 
+                  
+    
+
+
+                    
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | LOJAS
+        |--------------------------------------------------------------------------
+        */
+        foreach ($lojas as $loja) {
+ 
+$quantidadeloja=$produto->produtoitems
+                    ->flatMap(function ($produtoItem) use ($loja) {
+
+                   
+                        return ($produtoItem->produtoloja()->where('loja_id', $loja->id)->get());
+                    })
+                    ->sum('Quantidade');
+ $produtoItem[$loja->id . 'loja'] =$quantidadeloja;
+
+        
+           
+            $quantidade_total=$quantidade_total+$quantidadeloja;
+           
+                
+        }
+        
+        $produtoItem["quantidadetotoal"]=$quantidade_total;
+          
+        ;
+        
+
+        $collect->push($produtoItem);
     }
+
+    // dd($armazems);
+    return [
+        "linhas"=>$collect,
+        "armazens"=>$armazems,
+        "lojas"=>$lojas,
+        ];
+}
+
+public function index()
+    {
+
+        return Inertia::render('Estoque/EstoqueIndex',
+       $this->dadosinventario()
+        );
+    }
+    public function visualizar()
+    {
+
+        return Inertia::render('Estoque/estoquevisualizar',
+       $this->dadosinventario()
+        );
+    }
+
 }

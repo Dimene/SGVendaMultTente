@@ -7,8 +7,9 @@ import Dropdown from '@/Components/Dropdown.vue'
 import DropdownLink from '@/Components/DropdownLink.vue'
 import { Link } from '@inertiajs/vue3'
 import { usePermission } from '@/composables/usePermission';
-import { useEmpresa } from '@/composables/useEmpresa'; 
+
 const { nomeEmpresa, logoUrl } = useEmpresa(); 
+import { useEmpresa } from '@/composables/useEmpresa'; 
 const { 
     can
         }= usePermission();
@@ -80,32 +81,7 @@ const menuItems = {
     },
 
     vendas: {
-        items: [
-            {
-                name: 'Visualizar Vendas',
-                route: 'vendas.index',
-                icon: '👁️',
-                permission: 'venda-index'
-            },
-            {
-                name: 'Nova Venda',
-                route: 'vendas.create',
-                icon: '🛒',
-                permission: 'venda-create'
-            },
-            {
-                name: 'Relatórios',
-                route: 'vendas.relatorios',
-                icon: '📊',
-                permission: 'venda-relatorio'
-            },
-            {
-                name: 'Passar a Loja',
-                route: 'vendas.passarLoja',
-                icon: '🏪',
-                permission: 'venda-passar-loja'
-            }
-        ]
+        items: []
     },
 
     compras: {
@@ -195,6 +171,8 @@ const menuItems = {
         ]
     }
 };
+
+
 
 // Função para verificar se um item está ativo
 const isActive = (routePattern) => {
@@ -366,17 +344,14 @@ const checkScreenSize = () => {
 
 // Lifecycle hooks
 onMounted(() => {
+    // 🔥 Preenche os itens dinâmicos de Vendas ANTES de inicializar
+    menuItems.vendas.items = buildVendasItems();
 
-
-    // console.log(menuItems);
-  
-    checkScreenSize()
-    window.addEventListener('resize', checkScreenSize)
-    setTimeout(initializeOpenSubmenus, 100)
-    initDarkMode() // Inicializar tema escuro
-})
-
-
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    setTimeout(initializeOpenSubmenus, 100);
+    initDarkMode();
+});
 
 
 onBeforeUnmount(() => {
@@ -479,6 +454,61 @@ function validarMenuItem(permission) {
 
     return resultado;
 }
+
+
+// ============ VENDAS DINÂMICAS ============
+const buildVendasItems = () => {
+    const items = [
+        {
+            name: 'Visualizar Vendas',
+            route: 'vendas.index',
+            icon: '👁️',
+            permission: 'venda-index',
+        },
+    ];
+
+    // Pega as lojas dos props compartilhados do Inertia
+    const lojas = usePage().props.loja ?? [];
+
+    lojas.forEach((loja) => {
+        // Venda por loja
+        items.push({
+            name: `Venda ${loja.Desc}`,
+            route: 'vendas.efetuar',
+            parms: loja.id,
+            icon: '🛒',
+            permission: `${loja.Desc}`,
+        });
+
+      
+    });
+      // Relatório por loja
+        items.push({
+            name: `Relatório`,
+            route: 'vendas.relatorios',
+            icon: '📊',
+            permission: `Relatorio-venda`,
+        });
+
+    // Item fixo (fora do forEach para não duplicar)
+    items.push({
+        name: 'Passar a Loja',
+        route: 'vendas.passarLoja',
+        icon: '🏪',
+        permission: 'venda-passar-loja',
+    });
+
+    return items;
+};
+
+// Navegação com parâmetro opcional (para rotas com ID)
+const navigateToItem = (item) => {
+    const url = item.parms
+        ? route(item.route, item.parms)
+        : route(item.route);
+
+    navigateWithLoading(url, item.name);
+};
 </script>
 
 <template>
@@ -565,8 +595,10 @@ function validarMenuItem(permission) {
                        
                     </div>
                 </button>
-            </div>
-
+            </div> 
+            
+            
+      
             <!-- Clientes -->
             <!-- <div   v-if="can('cliente-index')"
                 class="relative"
@@ -639,95 +671,100 @@ function validarMenuItem(permission) {
                 </button>
             </div>
 
-            <!-- Vendas -->
-            <div   v-if="validarsubmenun('venda')"
-                class="relative"
-                @mouseenter="showFloatingSubmenu('vendas')"
-                @mouseleave="hideFloatingSubmenu"
-            >
-                <button 
-                    @click="sidebarOpen ? toggleSubmenu('vendas') : null"
-                    class="w-full group flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 hover:bg-white/10 relative"
-                    :class="[
-                        (sidebarOpen || isMobile) ? 'justify-between' : 'justify-center',
-                        route().current('vendas.*') || isSubmenuActive(menuItems.vendas.items) ? 'bg-white/10 text-white' : 'text-gray-300 hover:text-white'
-                    ]"
-                >
-                    <div class="flex items-center gap-3">
-                        <div class="relative">
-                            <svg v-if="loadingLink === 'Vendas'" class="w-5 h-5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
-                            </svg>
-                            <div
-                                v-if="route().current('vendas.*') || isSubmenuActive(menuItems.vendas.items)"
-                                class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"
-                            ></div>
-                        </div>
-                        <span v-show="sidebarOpen || isMobile" class="text-sm font-medium">Vendas</span>
-                    </div>
-                    <svg
-                        v-show="sidebarOpen || isMobile"
-                        class="w-4 h-4 transition-transform duration-200"
-                        :class="{ 'rotate-180': openSubmenus.vendas }"
-                        fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                    >
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                    </svg>
-                </button>
-
-                <div v-if="!sidebarOpen && !isMobile" class="absolute z-50 px-2 py-1 text-xs text-white transition-opacity rounded opacity-0 left-14 bg-slate-700 group-hover:opacity-100 whitespace-nowrap">
-                    Vendas
-                </div>
-
-                <!-- Submenu flutuante -->
+            
+           <!-- Vendas -->
+<div
+    v-if="validarsubmenun('venda')"
+    class="relative"
+    @mouseenter="showFloatingSubmenu('vendas')"
+    @mouseleave="hideFloatingSubmenu"
+>
+    <button
+        @click="sidebarOpen ? toggleSubmenu('vendas') : null"
+        class="w-full group flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 hover:bg-white/10 relative"
+        :class="[
+            (sidebarOpen || isMobile) ? 'justify-between' : 'justify-center',
+            route().current('vendas.*') || isSubmenuActive(menuItems.vendas.items)
+                ? 'bg-white/10 text-white'
+                : 'text-gray-300 hover:text-white'
+        ]"
+    >
+        <div class="flex items-center gap-3">
+            <div class="relative">
+                <svg v-if="loadingLink === 'Vendas'" class="w-5 h-5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                </svg>
                 <div
-                    v-if="shouldShowFloating('vendas') && !isMobile"
-                    class="fixed z-50 py-2 border shadow-2xl left-20 bg-slate-800 dark:bg-slate-900 rounded-xl min-w-48 border-white/10 dark:border-white/5"
-                    @mouseenter="cancelHide"
-                    @mouseleave="hideFloatingSubmenu"
-                >
-                    <button
-                        v-for="item in menuItems.vendas.items"
-                        
-                        :key="item.route"
-                        
-                        @click="navigateWithLoading(route(item.route), item.name)"
-                        class="w-full text-left px-4 py-2.5 text-gray-300 hover:text-white hover:bg-white/10 transition-all text-sm flex items-center gap-2"
-                        :class="{ 'bg-white/5 text-white': route().current(item.route) }"
-                       v-show="validarMenuItem(item.permission)" >
-                        <span >{{ item.icon }}</span>
-                        <span>{{ item.name }}</span>
-                        <div
-                            v-if="route().current(item.route)"
-                            class="ml-auto w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"
-                        ></div>
-                    </button>
-                </div>
-
-                <!-- Submenu normal -->
-                <div
-                    v-show="(sidebarOpen || isMobile) && openSubmenus.vendas"
-                    class="pl-3 mt-1 ml-8 space-y-1 border-l border-white/10 dark:border-white/5"
-                >
-                    <button   v-show="validarMenuItem(item.permission)" 
-                        v-for="item in menuItems.vendas.items"
-                        :key="item.route"
-                        @click="navigateWithLoading(route(item.route), item.name)"
-                        class="relative flex items-center w-full gap-2 px-3 py-2 text-sm text-left text-gray-400 transition-all rounded-lg hover:text-white hover:bg-white/10"
-                        :class="{ 'bg-white/5 text-white': route().current(item.route) }"
-                    >
-                        <span>{{ item.icon }}</span>
-                        <span>{{ item.name }}</span>
-                        <div
-                            v-if="route().current(item.route)"
-                            class="absolute left-0 w-1 h-4 transform -translate-y-1/2 bg-green-500 rounded-full top-1/2 animate-pulse"
-                        ></div>
-                    </button>
-                </div>
+                    v-if="route().current('vendas.*') || isSubmenuActive(menuItems.vendas.items)"
+                    class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"
+                ></div>
             </div>
+            <span v-show="sidebarOpen || isMobile" class="text-sm font-medium">Vendas</span>
+        </div>
+        <svg
+            v-show="sidebarOpen || isMobile"
+            class="w-4 h-4 transition-transform duration-200"
+            :class="{ 'rotate-180': openSubmenus.vendas }"
+            fill="none" stroke="currentColor" viewBox="0 0 24 24"
+        >
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+        </svg>
+    </button>
+
+    <!-- Tooltip quando sidebar recolhida -->
+    <div v-if="!sidebarOpen && !isMobile" class="absolute z-50 px-2 py-1 text-xs text-white transition-opacity rounded opacity-0 left-14 bg-slate-700 group-hover:opacity-100 whitespace-nowrap">
+        Vendas
+    </div>
+
+    <!-- Submenu flutuante (sidebar recolhida) -->
+    <div
+        v-if="shouldShowFloating('vendas') && !isMobile"
+        class="fixed z-50 py-2 border shadow-2xl left-20 bg-slate-800 dark:bg-slate-900 rounded-xl min-w-48 border-white/10 dark:border-white/5"
+        @mouseenter="cancelHide"
+        @mouseleave="hideFloatingSubmenu"
+    >
+        <button
+            v-for="item in menuItems.vendas.items"
+            v-show="can(item.permission)"
+            :key="item.route + '-' + (item.parms ?? '')"
+            @click="navigateToItem(item)"
+            class="w-full text-left px-4 py-2.5 text-gray-300 hover:text-white hover:bg-white/10 transition-all text-sm flex items-center gap-2"
+            :class="{ 'bg-white/5 text-white': route().current(item.route) }"
+        >
+            <span>{{ item.icon }}</span>
+            <span>{{ item.name }}</span>
+            <div
+                v-if="route().current(item.route)"
+                class="ml-auto w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"
+            ></div>
+        </button>
+    </div>
+
+    <!-- Submenu normal (sidebar expandida) -->
+    <div
+        v-show="(sidebarOpen || isMobile) && openSubmenus.vendas"
+        class="pl-3 mt-1 ml-8 space-y-1 border-l border-white/10 dark:border-white/5"
+    >
+        <button
+            v-for="item in menuItems.vendas.items"
+            v-show="validarMenuItem(item.permission)"
+            :key="item.route + '-' + (item.parms ?? '')"
+            @click="navigateToItem(item)"
+            class="relative flex items-center w-full gap-2 px-3 py-2 text-sm text-left text-gray-400 transition-all rounded-lg hover:text-white hover:bg-white/10"
+            :class="{ 'bg-white/5 text-white': route().current(item.route) }"
+        >
+            <span>{{ item.icon }}</span>
+            <span>{{ item.name }}</span>
+            <div
+                v-if="route().current(item.route)"
+                class="absolute left-0 w-1 h-4 transform -translate-y-1/2 bg-green-500 rounded-full top-1/2 animate-pulse"
+            ></div>
+        </button>
+    </div>
+</div>
 
             <!-- Compras -->
             <div  v-if="validarsubmenun('compra')"

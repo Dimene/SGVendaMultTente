@@ -16,69 +16,64 @@ const props = defineProps({
     compras: {
         type: Array,
         default: () => []
-    },  compra_id: {
+    },
+    compra_id: {
         type: Number,
         default: 0
     },
-     armazem: {
+    armazem: {
         type: Array,
         default: () => []
     },
-
-
     dadosconpra: {
         type: Array,
         default: () => []
     },
- iva: {
+    iva: {
         type: Array,
         default: () => []
     },
- lucro: {
+    lucro: {
         type: Array,
         default: () => []
     },
-
     guardarProduto: {
         type: Number,
-        default:0
+        default: 0
     },
-
-
     comprafeita: {
         type: Number,
-        default:0
+        default: 0
     },
     grupoItem: {
         type: Array,
         default: () => []
     },
-    resetarForm:{
-    type:Number,
-    default:0
-},
- totalCompra:{
-    type:Number,
-    default:0
-},
-totalvenda:{
-    type:Number,
-    default:0
-},
-
-totalvendaIva:{
-    type:Number,
-    default:0
-}
+    resetarForm: {
+        type: Number,
+        default: 0
+    },
+    totalCompra: {
+        type: Number,
+        default: 0
+    },
+    totalvenda: {
+        type: Number,
+        default: 0
+    },
+    totalvendaIva: {
+        type: Number,
+        default: 0
+    }
 });
 
 // ===================== EMITS =====================
-const emit = defineEmits(['salvar',
+const emit = defineEmits([
+    'salvar',
     'update:guadardad',
     'update:totalCompra',
     'update:totalvenda',
     'update:totalvendaIva',
-
 ]);
 
 // ===================== MODAL =====================
@@ -101,14 +96,10 @@ const colDefs = ref([]);
 const searchText = ref("");
 const rowData = ref([]);
 const totalCompra = ref([]);
-// const totalCompra = ref([]);
 const totalvenda = ref([]);
 const totalvendaIva = ref([]);
 
-
 const rowDataFiltrado = computed(() => {
-
-
     return rowData.value.filter(
         item => item.grupo === habaativada.value
     );
@@ -126,11 +117,9 @@ watch(
     { immediate: true }
 );
 
-
-watch(()=>props.resetarForm,(novo)=>{
-  rowData.value = [];
-
-})
+watch(() => props.resetarForm, (novo) => {
+    rowData.value = [];
+});
 
 // ===================== REMOVER GRUPO =====================
 function removergrupo(index) {
@@ -194,13 +183,11 @@ function atributosDados(nomeGrupo) {
         },
         {
             field: "armazem",
-            headerName: "armazem",
+            headerName: "Armazém",
             sortable: true,
             filter: true,
             width: 150
-
         },
-
         {
             field: "categoria",
             headerName: "categoria",
@@ -211,6 +198,13 @@ function atributosDados(nomeGrupo) {
                 const categoria = categoriaDados.value.find(c => c.id === params.data?.categoria);
                 return categoria ? categoria.nome : params.data?.categoria || '';
             }
+        },
+        {
+            field: "IVA",
+            headerName: "IVA",
+            sortable: true,
+            filter: true,
+            width: 150,
         },
         {
             field: "Nome",
@@ -244,21 +238,21 @@ function atributosDados(nomeGrupo) {
     });
 
     colunastabela.push({
-    field: "outros_Atributos",
-    headerName: "Outros Atributos",
-    sortable: true,
-    filter: true,
-    width: 300,
-    autoHeight: true,
-    wrapText: true
-});
+        field: "outros_Atributos",
+        headerName: "Outros Atributos",
+        sortable: true,
+        filter: true,
+        width: 300,
+        autoHeight: true,
+        wrapText: true
+    });
+
     // colunas fixas
     colunas.push(
         "Stock",
         "Preço Compra",
         "Preço Venda cliente 1",
         "Preço Venda cliente 2",
-        "Desconto (%)",
         "Venda com IVA cliente 1",
         "Venda com IVA cliente 2"
     );
@@ -328,37 +322,37 @@ function atributosDados(nomeGrupo) {
             }
         },
         {
-    field: "accoes",
-    headerName: "Ações",
-    width: 120,
-    sortable: false,
-    filter: false,
-    cellRenderer: () => {
-        return `
-            <div class="flex items-center justify-center gap-2">
-                <button class="inline-flex items-center justify-center w-8 h-8 text-sm text-white transition-all duration-200 bg-indigo-600 rounded-lg shadow-sm btn-visualizar hover:bg-indigo-700" title="Visualizar">
-                    <i class="fas fa-eye"></i>
-                </button>
-                <button class="inline-flex items-center justify-center w-8 h-8 text-sm text-white transition-all duration-200 bg-red-600 rounded-lg shadow-sm btn-eliminar hover:bg-red-700" title="Apagar">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </div>
-        `;
-    },
-    onCellClicked: (params) => {
-        const button = params.event.target.closest("button");
+            field: "accoes",
+            headerName: "Ações",
+            width: 120,
+            sortable: false,
+            filter: false,
+            cellRenderer: () => {
+                return `
+                    <div class="flex items-center justify-center gap-2">
+                        <button class="inline-flex items-center justify-center w-8 h-8 text-sm text-white transition-all duration-200 bg-indigo-600 rounded-lg shadow-sm btn-visualizar hover:bg-indigo-700" title="Visualizar">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="inline-flex items-center justify-center w-8 h-8 text-sm text-white transition-all duration-200 bg-red-600 rounded-lg shadow-sm btn-eliminar hover:bg-red-700" title="Apagar">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+            },
+            onCellClicked: (params) => {
+                const button = params.event.target.closest("button");
 
-        if (!button) return;
+                if (!button) return;
 
-        if (button.classList.contains("btn-visualizar")) {
-            editarItem(params.data);
+                if (button.classList.contains("btn-visualizar")) {
+                    editarItem(params.data);
+                }
+
+                if (button.classList.contains("btn-eliminar")) {
+                    eliminarItem(params.data);
+                }
+            }
         }
-
-        if (button.classList.contains("btn-eliminar")) {
-            eliminarItem(params.data);
-        }
-    }
-}
     );
 
     grupoSelecionado.categoria?.forEach((cat) => {
@@ -381,53 +375,47 @@ async function eliminarItem(item) {
     console.log("Produto a eliminar:", item);
 
     const resultado = await Swal.fire({
-        title:'Tem certeza?',
-        text:`Eliminar ${item.Nome}?`,
-        icon:'warning',
-        showCancelButton:true,
-        confirmButtonText:'Sim, eliminar'
+        title: 'Tem certeza?',
+        text: `Eliminar ${item.Nome}?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sim, eliminar'
     });
 
-
-    if(!resultado.isConfirmed){
+    if (!resultado.isConfirmed) {
         return;
     }
 
-
     try {
- console.log("dfkjdfdfkdfiofdcvvbbvbv33444", props.comprafeita)
-    const resposta = await axios.delete('/produtos/delete', {
-    data: {
-        item: item,
-        compra_id: props.comprafeita
-    }
-});
+        console.log("dfkjdfdfkdfiofdcvvbbvbv33444", props.comprafeita)
+        const resposta = await axios.delete('/produtos/delete', {
+            data: {
+                item: item,
+                compra_id: props.comprafeita
+            }
+        });
 
-
-        if(resposta.data.success){
+        if (resposta.data.success) {
 
             rowData.value = rowData.value.filter(
                 produto => produto.id !== item.id
             );
 
-
             Swal.fire({
-                icon:'success',
-                title:'Eliminado!',
-                text:resposta.data.message
+                icon: 'success',
+                title: 'Eliminado!',
+                text: resposta.data.message
             });
-
         }
 
-
-    } catch(error){
+    } catch (error) {
 
         console.error(error);
 
         Swal.fire({
-            icon:'error',
-            title:'Erro',
-            text:'Não foi possível eliminar'
+            icon: 'error',
+            title: 'Erro',
+            text: 'Não foi possível eliminar'
         });
 
     }
@@ -436,82 +424,91 @@ async function eliminarItem(item) {
 // ===================== SALVAR ITEM =====================
 function salvarItem(dados) {
 
-console.log("dados tabela ",dados);
+    console.log("Dados recebidos:", dados);
 
-    // campos visíveis na tabela (dadosstributo = colunas principais)
-    const camposTabela = new Set(dadosstributo.value);
-
-    // sempre ignorar estes campos fixos
-    const ignorados = new Set([
-        'id',
-        'grupo',
-        'fotos',
-        'categoria',
-        'outros_Atributos'
+    const camposTabela = new Set([
+        "id",
+        "grupo",
+        "foto",
+        "fotos",
+        "armazem",
+        "categoria",
+        "Nome",
+        "IVA",
+        "lucro",
+        "Desconto (%)",
+        "Stock",
+        "Preço Compra",
+        "Preço Venda",
+        "Preço Venda cliente 1",
+        "Preço Venda cliente 2",
+        "Venda com IVA cliente 1",
+        "Venda com IVA cliente 2",
+        "outros_Atributos"
     ]);
+
+    grupo.value
+        .find(g => g.nome === habaativada.value)
+        ?.listaatributo
+        ?.forEach(atributo => {
+            const campo = atributo.nome || atributo.Descricao;
+            if (campo) {
+                camposTabela.add(campo);
+            }
+        });
+
+    console.log("Campos que pertencem à tabela:", [...camposTabela]);
 
     const outros = [];
 
     Object.entries(dados).forEach(([campo, valor]) => {
 
-        // aqui está a regra principal:
-        // só entra em "outros" se NÃO estiver nas colunas visíveis
-        if (
-            (!camposTabela.has(campo)|| (campo === "lucro")||(campo === "IVA"))
-            &&
-            !ignorados.has(campo) &&
-            valor !== undefined &&
-            valor !== null &&
-            valor !== ''
-        ) {
+        if (valor === undefined || valor === null || valor === '') {
+            return;
+        }
+
+        if (!camposTabela.has(campo)) {
             outros.push(`${campo}: ${valor}`);
         }
+
     });
 
     const itemTabela = {
-    ...dados,
-    grupo: dados.grupo || habaativada.value,
-    outros_Atributos: outros.length ? outros.join(" | ") : ''
-};
+        ...dados,
+        grupo: dados.grupo || habaativada.value,
+        outros_Atributos: outros.length
+            ? outros.join(" | ")
+            : (dados.outros_Atributos || '')
+    };
 
+    console.log("Outros atributos:", itemTabela.outros_Atributos);
 
-    // ================= UPDATE =================
-   // ================= UPDATE =================
-if (itemTabela.id) {
+    if (itemTabela.id) {
 
-    const index = rowData.value.findIndex(
-        i => i.id === itemTabela.id
-    );
+        const index = rowData.value.findIndex(
+            i => i.id === itemTabela.id
+        );
 
-    if (index !== -1) {
-
-        rowData.value[index] = {
-            ...rowData.value[index],
-            ...itemTabela
-        };
+        if (index !== -1) {
+            rowData.value[index] = {
+                ...rowData.value[index],
+                ...itemTabela
+            };
+        } else {
+            rowData.value.push(itemTabela);
+        }
 
     } else {
 
-        // caso venha do banco mas ainda não exista na tabela
+        itemTabela.id =
+            crypto.randomUUID?.() || Date.now();
 
-        console.log("--------------",itemTabela);
         rowData.value.push(itemTabela);
-
     }
 
-}
-// ================= CREATE =================
-else {
+    rowData.value = [...rowData.value];
 
-    itemTabela.id = crypto.randomUUID?.() || Date.now();
-
-    rowData.value.push(itemTabela);
-
-}
-
-rowData.value = [...rowData.value];
-
-fecharModal();
+    fecharModal();
 }
 
 // ===================== FECHAR MODAL =====================
@@ -538,22 +535,17 @@ function onGridReady(params) {
     });
 }
 
-
-
 watch(
     () => props.guardarProduto,
     (novo) => {
         console.log('Mudou:', novo)
 
-        if(novo>0){
-guardardados(novo)
-
-emit('update:guadardad',0);
-
+        if (novo > 0) {
+            guardardados(novo)
+            emit('update:guadardad', 0);
         }
     }
 )
-
 
 async function guardardados() {
 
@@ -604,12 +596,6 @@ async function guardardados() {
     }
 }
 
-
-
-
-
-
-
 watch(
     () => rowData.value,
     (novoItem) => {
@@ -634,7 +620,7 @@ watch(
 
         emit("update:totalCompra", totalCompra.value);
         emit("update:totalvenda", totalvenda.value);
-    emit("update:totalvendaIva", totalvendaIva.value);
+        emit("update:totalvendaIva", totalvendaIva.value);
 
     },
     {
@@ -648,7 +634,6 @@ watch(
     (nova) => {
         if (!nova || !Array.isArray(nova)) return;
 
-        // Mapeia todos os itens por grupo
         const itensPorGrupo = nova.reduce((acc, item) => {
             const grupo = item.grupo || 'Sem grupo';
             if (!acc[grupo]) {
@@ -658,10 +643,8 @@ watch(
             return acc;
         }, {});
 
-        // Encontra o primeiro grupo com itens para ativar
         const gruposComItens = Object.keys(itensPorGrupo);
 
-        // Filtra apenas grupos que existem na configuração
         const gruposValidos = gruposComItens.filter(grupoNome =>
             props.grupoItem.some(g => g.nome === grupoNome)
         );
@@ -671,7 +654,6 @@ watch(
             return;
         }
 
-        // Ativa o primeiro grupo válido (ou o que tem mais itens)
         const grupoAtivo = gruposValidos.reduce((a, b) =>
             itensPorGrupo[a].length > itensPorGrupo[b].length ? a : b
         );
@@ -679,7 +661,6 @@ watch(
         habaativada.value = grupoAtivo;
         atributosDados(grupoAtivo);
 
-        // Adiciona todos os itens de todos os grupos
         gruposValidos.forEach(grupoNome => {
             itensPorGrupo[grupoNome].forEach(item => {
                 item.grupo = grupoNome;
@@ -690,23 +671,7 @@ watch(
     { immediate: true }
 );
 
-
-
-// gerar excel
-
-async  function gerarModeloExcel() {
-
-
-    const response = await axios.get('/produtos/modelo/import', {
-        responseType: 'blob'
-    });
-
-    saveAs(response.data, 'Modelo.xlsx');
-
-}
-
-
-
+// ===================== GERAR EXCEL =====================
 const produtosPorGrupo = computed(() => {
     return rowData.value.reduce((grupos, item) => {
 
@@ -722,11 +687,319 @@ const produtosPorGrupo = computed(() => {
 
     }, {});
 });
+
+async function gerarModeloExcel() {
+    if (!habaativada.value) {
+        await Swal.fire({
+            icon: 'warning',
+            title: 'Aviso',
+            text: 'Selecione um grupo antes de gerar o modelo.'
+        });
+        return;
+    }
+
+    try {
+        const response = await axios.get(
+            `/produtos/modelo/import/${encodeURIComponent(habaativada.value)}`,
+            { responseType: 'blob' }
+        );
+
+        saveAs(
+            response.data,
+            `Modelo_${habaativada.value.replace(/\s+/g, '_')}.xlsx`
+        );
+    } catch (e) {
+        console.error(e);
+        Swal.fire({
+            icon: 'error',
+            title: 'Erro',
+            text: 'Não foi possível gerar o modelo.'
+        });
+    }
+}
+
+// ===================== IMPORTAR EXCEL =====================
+const inputExcel = ref(null);
+
+
+// Abas auxiliares reconhecidas (nome normalizado → campo alvo)
+const ABAS_AUXILIARES = {
+    "armazens": "armazem",
+    "armazém": "armazem",
+    "armazem": "armazem",
+    "categorias": "categoria",
+    "categoria": "categoria",
+    "listas": null, // abas de listas para dropdown (ignoradas na importação)
+};
+
+// Normaliza texto (remove acentos, espaços, minúsculas)
+function normalizar(txt) {
+    return String(txt || "")
+        .trim()
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+}
+
+// Constrói dicionário de lookup a partir de uma aba auxiliar
+// Ex: { "1": "Armazém Central", "2": "Armazém Norte" }
+function construirLookup(worksheet) {
+    const linhas = XLSX.utils.sheet_to_json(worksheet, {
+        defval: "",
+        raw: false,
+    });
+
+    const mapa = {};
+
+    linhas.forEach((linha) => {
+        // Procura colunas típicas: ID/Codigo, Nome/Descricao
+        const chavesPossiveis = ["id", "codigo", "código", "cod"];
+        const valoresPossiveis = ["nome", "descricao", "descrição", "designacao", "designação"];
+
+        const chaveCol = Object.keys(linha).find((k) =>
+            chavesPossiveis.includes(normalizar(k))
+        );
+        const valorCol = Object.keys(linha).find((k) =>
+            valoresPossiveis.includes(normalizar(k))
+        );
+
+        if (chaveCol && valorCol) {
+            const chave = String(linha[chaveCol]).trim();
+            const valor = String(linha[valorCol]).trim();
+            if (chave && valor) {
+                mapa[chave] = valor;
+            }
+        }
+    });
+
+    return mapa;
+}
+
+async function importarExcel(event) {
+    const ficheiro = event.target.files?.[0];
+
+    if (!ficheiro) return;
+
+    try {
+        const buffer = await ficheiro.arrayBuffer();
+        const workbook = XLSX.read(buffer, { type: "array" });
+
+        // =====================================================
+        // 1) PRIMEIRA PASSAGEM: ler abas auxiliares (lookup)
+        // =====================================================
+        const lookups = {
+            armazem: {},
+            categoria: {},
+        };
+
+        const abasAuxiliaresEncontradas = [];
+
+        workbook.SheetNames.forEach((nomeAba) => {
+            const nomeNorm = normalizar(nomeAba);
+            const campoAlvo = ABAS_AUXILIARES[nomeNorm];
+
+            if (campoAlvo) {
+                const worksheet = workbook.Sheets[nomeAba];
+                lookups[campoAlvo] = construirLookup(worksheet);
+                abasAuxiliaresEncontradas.push(nomeAba);
+            }
+        });
+
+        console.log("🔍 Lookups construídos:", lookups);
+        console.log("📋 Abas auxiliares:", abasAuxiliaresEncontradas);
+
+        // =====================================================
+        // 2) SEGUNDA PASSAGEM: processar abas de grupos
+        // =====================================================
+        const gruposPorNome = props.grupoItem.reduce((acc, g) => {
+            acc[normalizar(g.nome)] = g;
+            return acc;
+        }, {});
+
+        const itensPorAba = {};
+        let totalImportado = 0;
+        const abasIgnoradas = [];
+
+        workbook.SheetNames.forEach((nomeAba) => {
+            const nomeNorm = normalizar(nomeAba);
+
+            // Ignora abas auxiliares e "listas"
+            if (ABAS_AUXILIARES[nomeNorm] !== undefined) return;
+            if (nomeNorm === "listas") return;
+
+            const grupo = gruposPorNome[nomeNorm];
+
+            if (!grupo) {
+                abasIgnoradas.push(nomeAba);
+                return;
+            }
+
+            const worksheet = workbook.Sheets[nomeAba];
+            const linhas = XLSX.utils.sheet_to_json(worksheet, {
+                range: 2,
+                defval: "",
+                raw: false,
+            });
+
+            const limpas = linhas.filter((l) => {
+                const nome = String(l["Nome"] || "").trim().toLowerCase();
+                return nome && nome !== "produto exemplo";
+            });
+
+            if (limpas.length === 0) return;
+
+            itensPorAba[grupo.nome] = limpas;
+            totalImportado += limpas.length;
+        });
+
+        if (totalImportado === 0) {
+            await Swal.fire({
+                icon: "info",
+                title: "Nada a importar",
+                text: "Nenhuma aba corresponde a um grupo com itens.",
+            });
+            if (inputExcel.value) inputExcel.value.value = "";
+            return;
+        }
+
+        // Confirmação com resumo
+        const confirmacao = await Swal.fire({
+            icon: "question",
+            title: "Importar Excel?",
+            html: `
+                <p>Serão importados <strong>${totalImportado}</strong> itens.</p>
+                ${
+                    abasAuxiliaresEncontradas.length
+                        ? `<p class="mt-2 text-sm text-green-600">
+                            🔗 Abas auxiliares: ${abasAuxiliaresEncontradas.join(", ")}
+                           </p>`
+                        : ""
+                }
+                ${
+                    abasIgnoradas.length
+                        ? `<p class="mt-2 text-sm text-red-500">
+                            Abas ignoradas: ${abasIgnoradas.join(", ")}
+                           </p>`
+                        : ""
+                }
+            `,
+            showCancelButton: true,
+            confirmButtonText: "Sim, importar",
+            cancelButtonText: "Cancelar",
+        });
+
+        if (!confirmacao.isConfirmed) {
+            if (inputExcel.value) inputExcel.value.value = "";
+            return;
+        }
+
+        // Ativa o primeiro grupo antes de salvar
+        const primeiroGrupo = Object.keys(itensPorAba)[0];
+        if (primeiroGrupo) {
+            habaativada.value = primeiroGrupo;
+            atributosDados(primeiroGrupo);
+        }
+
+        // =====================================================
+        // 3) SALVAR ITENS aplicando lookups
+        // =====================================================
+        Object.entries(itensPorAba).forEach(([nomeGrupo, itens]) => {
+            itens.forEach((linha) => {
+                // --- Resolver Armazém via lookup ---
+                let armazemValor =
+                    linha["Armazém"] || linha["armazem"] || linha["Armazem"] || "";
+
+                // Se for um ID numérico, procura no lookup
+                if (armazemValor && lookups.armazem[String(armazemValor).trim()]) {
+                    armazemValor = lookups.armazem[String(armazemValor).trim()];
+                }
+
+                // --- Resolver Categoria via lookup ---
+                let categoriaValor = linha["categoria"] || linha["Categoria"] || "";
+
+                if (categoriaValor && lookups.categoria[String(categoriaValor).trim()]) {
+                    categoriaValor = lookups.categoria[String(categoriaValor).trim()];
+                }
+
+                const item = {
+                    grupo: nomeGrupo,
+                    foto: linha["Foto"] || "",
+                    armazem: armazemValor,
+                    categoria: categoriaValor,
+                    Nome: linha["Nome"] || "",
+                    IVA: linha["IVA"] || "",
+                    lucro: linha["lucro"] || "",
+                    "Desconto (%)": linha["Desconto (%)"] || "",
+                    Stock: Number(linha["Stock"] || 0),
+                    "Preço Compra": Number(linha["Preço Compra"] || 0),
+                    "Preço Venda cliente 1": Number(
+                        linha["Preço Venda Singulares"] ||
+                            linha["Preço Venda cliente 1"] ||
+                            0
+                    ),
+                    "Preço Venda cliente 2": Number(
+                        linha["Preço Venda Empresas"] ||
+                            linha["Preço Venda cliente 2"] ||
+                            0
+                    ),
+                    "Venda com IVA cliente 1": Number(
+                        linha["Venda com IVA cliente 1"] || 0
+                    ),
+                    "Venda com IVA cliente 2": Number(
+                        linha["Venda com IVA cliente 2"] || 0
+                    ),
+                    outros_Atributos: linha["Outros Atributos"] || "",
+                };
+
+                const fixos = new Set([
+                    "Foto", "Armazém", "armazem", "Armazem", "categoria", "Categoria",
+                    "Nome", "IVA", "lucro", "Desconto (%)", "Stock", "Preço Compra",
+                    "Preço Venda Singulares", "Preço Venda Empresas",
+                    "Preço Venda cliente 1", "Preço Venda cliente 2",
+                    "Venda com IVA cliente 1", "Venda com IVA cliente 2",
+                    "Outros Atributos",
+                ]);
+
+                Object.entries(linha).forEach(([campo, valor]) => {
+                    if (!fixos.has(campo) && valor !== "" && valor != null) {
+                        item[campo] = valor;
+                    }
+                });
+
+                salvarItem(item);
+            });
+        });
+
+        if (inputExcel.value) inputExcel.value.value = "";
+
+        await Swal.fire({
+            icon: "success",
+            title: "Importado!",
+            html: `
+                <p>${totalImportado} itens carregados na tabela.</p>
+                ${
+                    abasAuxiliaresEncontradas.length
+                        ? `<p class="mt-2 text-xs text-gray-500">
+                            Dados cruzados com: ${abasAuxiliaresEncontradas.join(", ")}
+                           </p>`
+                        : ""
+                }
+            `,
+        });
+    } catch (erro) {
+        console.error("Erro ao importar Excel:", erro);
+        await Swal.fire({
+            icon: "error",
+            title: "Erro",
+            text: "Não foi possível ler o ficheiro Excel.",
+        });
+        if (inputExcel.value) inputExcel.value.value = "";
+    }
+}
 </script>
 
 <template>
     <Head title="Compras" />
-
 
     <div class="bg-white rounded-lg shadow">
         <!-- Header -->
@@ -745,17 +1018,35 @@ const produtosPorGrupo = computed(() => {
             </button>
         </div>
 
-<!-- <button
-class="px-4 py-2 text-white bg-green-600 rounded"
-@click="gerarModeloExcel">
+        <!-- Botões Excel -->
+        <div class="flex flex-wrap items-center gap-3 px-4 py-3 border-b">
 
-<i class="fas fa-file-excel"></i>
+            <button
+                class="px-4 py-2 text-white bg-green-600 rounded hover:bg-green-700"
+                @click="gerarModeloExcel"
+            >
+                <i class="fas fa-file-excel"></i>
+                Baixar Modelo Excel
+            </button>
 
-Baixar Modelo Excel
+            <input
+                ref="inputExcel"
+                type="file"
+                accept=".xlsx,.xls"
+                class="hidden"
+                @change="importarExcel"
+            />
 
-</button> -->
+            <button
+                class="px-4 py-2 text-white bg-blue-600 rounded hover:bg-blue-700"
+                @click="inputExcel.click()"
+            >
+                <i class="fas fa-file-import"></i>
+                Importar Excel
+            </button>
 
-  <meta name="csrf-token" content="{{ csrf_token() }}">
+        </div>
+
         <!-- Grupos -->
         <nav class="flex flex-wrap gap-2 px-4 pt-2 border-b">
             <div
@@ -801,29 +1092,28 @@ Baixar Modelo Excel
                 </div>
             </div>
 
-
             <!-- Tabela -->
             <div class="overflow-x-auto">
-            <AgGridVue
-    :rowData="rowDataFiltrado"
-    :columnDefs="colDefs"
-    :quickFilterText="searchText"
-    :pagination="true"
-    :paginationPageSize="15"
-    class="ag-theme-alpine"
-    style="height: 400px; width: 100%;"
-    @grid-ready="onGridReady"
-    :defaultColDef="{
-        resizable: true,
-        cellStyle: {
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-        }
-    }"
-/>
-
+                <AgGridVue
+                    :rowData="rowDataFiltrado"
+                    :columnDefs="colDefs"
+                    :quickFilterText="searchText"
+                    :pagination="true"
+                    :paginationPageSize="15"
+                    class="ag-theme-alpine"
+                    style="height: 400px; width: 100%;"
+                    @grid-ready="onGridReady"
+                    :defaultColDef="{
+                        resizable: true,
+                        cellStyle: {
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }
+                    }"
+                />
             </div>
+
             <!-- Rodapé com contagem -->
             <div class="flex items-center justify-between mt-4 text-sm text-gray-500">
                 <span>

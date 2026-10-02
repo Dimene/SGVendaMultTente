@@ -1,5 +1,4 @@
 <script setup>
-
 import { computed, ref } from 'vue'
 import { Head } from '@inertiajs/vue3'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
@@ -10,178 +9,69 @@ const props = defineProps({
     lojas:    { type: Array, default: () => [] },
 })
 
-/* ============================================================
-   PESQUISA
-============================================================ */
+/* ---------------- Pesquisa ---------------- */
 const pesquisa = ref('')
 
+/* ---------------- Totais globais (KPIs) ---------------- */
+const totalArmazem = computed(() =>
+    props.armazens.reduce((soma, a) =>
+        soma + props.linhas.reduce((s, item) => s + (Number(item[a.id + 'armazem']) || 0), 0)
+    , 0)
+)
 
-/* ============================================================
-   TABELA BASE
-============================================================ */
-const dadostabela = computed(() => {
-    return props.linhas.map(item => ({
+const totalLoja = computed(() =>
+    props.lojas.reduce((soma, l) =>
+        soma + props.linhas.reduce((s, item) => s + (Number(item[l.id + 'loja']) || 0), 0)
+    , 0)
+)
+
+const totalItens = computed(() => totalArmazem.value + totalLoja.value)
+
+const totalFinanceiro = computed(() =>
+    dadostabela.value.reduce((s, item) =>
+        s + (Number(item.quantidadetotoal) || 0) * (Number(item.preco_venda1) || 0)
+    , 0)
+)
+
+/* ---------------- Tabela ---------------- */
+const totalColunas = computed(() => 3 + props.armazens.length)
+
+const dadostabela = computed(() =>
+    props.linhas.map(item => ({
         ...item,
-
         total: props.armazens.reduce(
-            (s, a) => s + (Number(item[a.id + 'armazem']) || 0),
+            (s, a) => s + (item.stocks?.[a.id] ?? 0),
             0
         ),
     }))
-})
+)
 
-
-/* ============================================================
-   FILTRO DA PESQUISA
-============================================================ */
+/* ---------------- Filtro da pesquisa ---------------- */
 const dadosFiltrados = computed(() => {
-
     const termo = pesquisa.value.trim().toLowerCase()
-
-    // Sem pesquisa → todos os dados
-    if (!termo) {
-        return dadostabela.value
-    }
+    if (!termo) return dadostabela.value
 
     return dadostabela.value.filter(item => {
-
         const campos = [
             item.id,
             item.nome,
             item.categoria,
         ]
-
         return campos.some(v =>
-            v != null &&
-            String(v).toLowerCase().includes(termo)
+            v != null && String(v).toLowerCase().includes(termo)
         )
     })
 })
 
-
-/* ============================================================
-   KPIs DINÂMICOS
-   Todos dependem de dadosFiltrados
-============================================================ */
-
-/**
- * Total de stock nos armazéns
- */
-const totalArmazem = computed(() => {
-
-    return dadosFiltrados.value.reduce((total, item) => {
-
-        const subtotal = props.armazens.reduce(
-            (soma, armazem) => {
-
-                return soma +
-                    (Number(item[armazem.id + 'armazem']) || 0)
-
-            },
-            0
-        )
-
-        return total + subtotal
-
-    }, 0)
-})
-
-
-/**
- * Total de stock nas lojas
- */
-const totalLoja = computed(() => {
-
-    return dadosFiltrados.value.reduce((total, item) => {
-
-        const subtotal = props.lojas.reduce(
-            (soma, loja) => {
-
-                return soma +
-                    (Number(item[loja.id + 'loja']) || 0)
-
-            },
-            0
-        )
-
-        return total + subtotal
-
-    }, 0)
-})
-
-
-/**
- * Total geral de itens
- */
-const totalItens = computed(() => {
-
-    return totalArmazem.value + totalLoja.value
-
-})
-
-
-/**
- * Valor financeiro esperado
- *
- * Quantidade total × preço de venda 1
- */
-const totalFinanceiro = computed(() => {
-
-    return dadosFiltrados.value.reduce(
-        (total, item) => {
-
-            const quantidade =
-                Number(item.quantidadetotoal) || 0
-
-            const preco =
-                Number(item.preco_venda1) || 0
-
-            return total + (quantidade * preco)
-
-        },
-        0
-    )
-})
-
-
-/* ============================================================
-   QUANTIDADE DE ARTIGOS
-============================================================ */
-const totalArtigos = computed(() => {
-    return dadosFiltrados.value.length
-})
-
-
-/* ============================================================
-   CONTAGEM DE COLUNAS
-============================================================ */
-const totalColunas = computed(() =>
-    3 + props.armazens.length
-)
-
-
-/* ============================================================
-   HELPERS
-============================================================ */
-
+/* ---------------- Helpers ---------------- */
 function formatMZN(valor) {
-
     const n = Number(valor) || 0
-
-    return n.toLocaleString('pt-MZ', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    })
+    return n.toLocaleString('pt-MZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
-
 
 function formatNum(valor) {
-
     return (Number(valor) || 0).toLocaleString('pt-MZ')
-
 }
-
-
 </script>
 
 <template>
@@ -193,7 +83,7 @@ function formatNum(valor) {
             <!-- Header -->
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 class="text-2xl font-bold tracking-tight text-gray-900">Inventário</h1>
+                    
                     <p class="mt-1 text-sm text-gray-500">
                         Visão geral de stock por armazém e loja
                     </p>
@@ -203,68 +93,7 @@ function formatNum(valor) {
                 </span>
             </div>
 
-            <!-- KPIs -->
-            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                <!-- Total de Itens -->
-                <div class="p-4 bg-white border border-gray-200 shadow-sm rounded-xl">
-                    <div class="flex items-center justify-between">
-                        <p class="text-xs font-medium tracking-wider text-gray-500 uppercase">Total de Itens</p>
-                        <span class="inline-flex items-center justify-center w-8 h-8 text-indigo-600 rounded-lg bg-indigo-50">
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                            </svg>
-                        </span>
-                    </div>
-                    <p class="mt-3 text-2xl font-bold text-gray-900 tabular-nums">{{ formatNum(totalItens) }}</p>
-                    <p class="mt-1 text-xs text-gray-400">Armazém + Loja</p>
-                </div>
-
-                <!-- Total em Armazém -->
-                <div class="p-4 bg-white border border-gray-200 shadow-sm rounded-xl">
-                    <div class="flex items-center justify-between">
-                        <p class="text-xs font-medium tracking-wider text-gray-500 uppercase">Total em Armazém</p>
-                        <span class="inline-flex items-center justify-center w-8 h-8 text-blue-600 rounded-lg bg-blue-50">
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 7l9-4 9 4M3 7v10l9 4 9-4V7M3 7l9 4 9-4" />
-                            </svg>
-                        </span>
-                    </div>
-                    <p class="mt-3 text-2xl font-bold text-blue-700 tabular-nums">{{ formatNum(totalArmazem) }}</p>
-                    <p class="mt-1 text-xs text-gray-400">{{ props.armazens.length }} armazém(ns)</p>
-                </div>
-
-                <!-- Total em Loja -->
-                <div class="p-4 bg-white border border-gray-200 shadow-sm rounded-xl">
-                    <div class="flex items-center justify-between">
-                        <p class="text-xs font-medium tracking-wider text-gray-500 uppercase">Total em Loja</p>
-                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600">
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 9l1-5h16l1 5M4 9v11h16V9M9 20v-6h6v6" />
-                            </svg>
-                        </span>
-                    </div>
-                    <p class="mt-3 text-2xl font-bold text-emerald-700 tabular-nums">{{ formatNum(totalLoja) }}</p>
-                    <p class="mt-1 text-xs text-gray-400">{{ props.lojas.length }} loja(s)</p>
-                </div>
-
-                <!-- Total Financeiro -->
-                <div class="p-4 border border-indigo-200 shadow-sm rounded-xl bg-gradient-to-br from-indigo-50 to-white">
-                    <div class="flex items-center justify-between">
-                        <p class="text-xs font-medium tracking-wider text-indigo-600 uppercase">Valor Esperado</p>
-                        <span class="inline-flex items-center justify-center w-8 h-8 text-indigo-700 bg-indigo-100 rounded-lg">
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 9v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </span>
-                    </div>
-                    <p class="mt-3 text-2xl font-bold text-indigo-700 tabular-nums">
-                        {{ formatMZN(totalFinanceiro) }}
-                        <span class="text-xs font-medium text-indigo-500">MZN</span>
-                    </p>
-                    <p class="mt-1 text-xs text-gray-400">Total × Preço Venda 1</p>
-                </div>
-            </div>
-
+          
             <!-- Barra de pesquisa -->
             <div class="p-4 bg-white border border-gray-200 shadow-sm rounded-xl">
                 <div class="relative">
@@ -336,9 +165,7 @@ function formatNum(valor) {
                                     Preço de Venda
                                 </th>
 
-                                <th rowspan="2" class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-600 border-b border-gray-200 bg-gray-50 min-w-[140px]">
-                                    Min Total Esperado
-                                </th>
+                                
                             </tr>
 
                             <tr class="bg-gray-50">
@@ -418,10 +245,7 @@ function formatNum(valor) {
                                         {{ dadositem.iva_percentual }}%
                                     </span>
                                 </td>
-                                <td class="px-4 py-3 font-semibold text-right text-indigo-700 tabular-nums bg-indigo-50/40">
-                                    {{ formatMZN(dadositem.quantidadetotoal * dadositem.preco_venda1) }}
-                                    <span class="ml-1 text-[10px] font-normal text-indigo-500">MZN</span>
-                                </td>
+                                
                             </tr>
 
                             <!-- Empty state -->

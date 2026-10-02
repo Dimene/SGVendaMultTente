@@ -147,4 +147,22 @@ public function resetarSenha($id)
         'message' => 'Senha resetada com sucesso.'
     ]);
 }
+public function resetarSenhapessoal()
+{
+
+
+// $id=auth()->user()->id;
+// dd($id);
+//     $user = User::findOrFail($id);
+
+//     // Definir a nova senha padrão
+//     $novaSenha = "1234567890";
+
+//     // Atualizar a senha do usuário
+//     $user->update([
+//         'password' => Hash::make($novaSenha)
+//     ]);
+
+    return Inertia::render('Auth.ResetPassword');
+}
 }

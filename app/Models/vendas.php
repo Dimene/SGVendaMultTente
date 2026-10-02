@@ -16,6 +16,7 @@ class vendas extends Model
         'valor_pago',
         'troco',
         'usario_id',
+        'loja_id',
         'cliente_id',
         'reiboNr',
         'total'
@@ -40,4 +41,6 @@ class vendas extends Model
     {
         return $this->belongsTo(Cliente::class, 'cliente_id');
     }
+
+    
 }

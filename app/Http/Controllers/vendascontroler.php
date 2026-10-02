@@ -86,13 +86,21 @@ return  Inertia::render('vendas/vendasIndex',[
     /**
      * Show the form for creating a new resource.
      */
-   public function create()
+   public function create($idloja)
 {
 
-$item=collect(loja::pluck("produtoitem_id")->toArray());
+
+// dd($idloja);
+
+$item=collect(loja::where('loja_id',$idloja)->pluck("produtoitem_id")->toArray());
 
 
-$item=produtoitems::whereIn('id',$item)->with(['produto.categoria','outrosatributos','produtoloja.loja'])->get();
+
+
+
+$item=produtoitems::whereIn('id',$item)->with(['produto.categoria','outrosatributos','produtoloja.loja'])
+
+->get();
 
  
 $tabela_ivas=tabela_ivas::all();
@@ -107,6 +115,7 @@ $clientes=Cliente::all();
         'tabela_ivas'=>$tabela_ivas,
         'viaspagamentos'=>$viaspagamentos,
         'clientes'=>$clientes,
+        'idloja'=>$idloja,
     ]);
 }
 
@@ -118,7 +127,7 @@ $clientes=Cliente::all();
         //
 
 
-        //   dd($request->all());
+          $loja=($request->all()["itens"][0]["loja"]["loja_id"]);
         
 $vendasTotal=vendas::whereMonth("created_at",Carbon::now()->format('m'))
 ->whereYear("created_at",Carbon::now()->format('Y'))->max('reiboNr');
@@ -139,8 +148,7 @@ $usuario=auth()->user()->id;
         'valor_pago'=>$request["valor_pago"],
         'troco'=>$request["troco"],
         'cliente_id'=>$request["cliente_id"],
-
-
+        'loja_id'=>$loja,
         'usario_id'=>$usuario,
         'referencia'=>$request["referencia"],
         'reiboNr'=>$fatura,
@@ -149,17 +157,17 @@ $usuario=auth()->user()->id;
 
     foreach($request->itens as $item){
     //   $itemget=  produtoitems::where("id",$item['produto_id'])->first();
-// dd($item);
+$idloja_id=($item["loja"]["loja_id"]);
 
  $idprodutoloaj=$item["loja"]["id"];
 //  $idprodutoloaj=$item["loja"]["loja_id"];
 
-// dd($idprodutoloaj);
+//  dd($idprodutoloaj);
 
  $quantidade=$item["loja"]["Quantidade"]-$item["quantidade"];
  loja::where("id",$idprodutoloaj)
  ->update(["Quantidade"=> $quantidade]);
-// dd($item["loja"]);
+
        
             VendaItem::create([
                 'venda_id'=>$idvendas->id,
@@ -168,12 +176,14 @@ $usuario=auth()->user()->id;
         'preco_unitario'=>$item['preco_unitario'],
         'desconto'=>$item['desconto'],
         'iva'=>$item['iva'],
+        'loja_id'=>$idloja_id,
         'subtotal'=>$item['total_linha'],
 
             ]);
 
         
     }
+
     }
 
 
@@ -247,16 +257,22 @@ public function relatorios()
     $funcionarios    = User::all();          // ← renomeado
     $viasdepagamento = ViaPagamento::all();
     $empresa         = Empresa::first();
+    $lojas=loja_desc::all();
 
     return Inertia::render('vendas/relatorioVendas', [
         'funcionarios'    => $funcionarios,  // ← nome que não colide
         'viasdepagamento' => $viasdepagamento,
         'empresa'         => $empresa,       // ← sem cifrão
+        'lojas'         => $lojas,       // ← sem cifrão
+           // ← sem cifrão
     ]);
 }
-public function relatorioDados($datainicio,$datafim){
+public function relatorioDados($id,$datainicio,$datafim){
 
 
+
+
+$id=$id==100?collect(loja_desc::pluck('id')->toArray()):collect($id);
 $datainicio??Carbon::now()->format('y-m-d');
 
 
@@ -267,14 +283,15 @@ if($datafim=="null"){
 $datafim=Carbon::now()->format('y-m-d');
 }
 
-$dados=vendas::whereDate("created_at",">=",$datainicio)
+
+$dados=vendas:: whereIn('loja_id',$id)->whereDate("created_at",">=",$datainicio)
 ->whereDate("created_at","<=",$datafim)->with([
         'itens.produto.produto.categoria',
         'viaPagamento',
         'cliente',
         'usuario'
+          
     ])->get();
-
 
 $collec=collect();
 

@@ -13,6 +13,8 @@ class produtoitems extends Model
         'iva',
         'preco_venda1',
         'preco_venda2',
+        'venda_1_iva',
+        'venda_2_iva',
         'estoque',
         'desconto',
         'compra_id',

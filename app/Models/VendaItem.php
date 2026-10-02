@@ -13,6 +13,7 @@ class VendaItem extends Model
         'produto_id',
         'quantidade',
         'iva',
+        'loja_id',
         'preco_unitario',
         'desconto',
         'subtotal',

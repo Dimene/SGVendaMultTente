@@ -1,6 +1,8 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Exports\ModeloCompletoExport;
+use App\Exports\ModeloProdutoExport;
 use App\Exports\produtosExport;
 use App\Models\Armazem;
 use App\Models\Categoria;
@@ -14,6 +16,11 @@ use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 
 class ProdutoController extends Controller
@@ -28,7 +35,7 @@ public function store(Request $request)
 {
 
 
-// dd($request->all());
+//  dd($request->all());
 
 //   return response()->json($request->all());
 
@@ -42,8 +49,9 @@ public function store(Request $request)
     foreach ($request->items as $Item) {
 
         $grupo = gruposItem::where("nome", $Item["grupo"] ?? null)->with('listaatributo')->first();
+         
 
-
+// dd($grupo);
 
         if (!$grupo) {
             return response()->json([
@@ -54,6 +62,25 @@ public function store(Request $request)
 
 
 
+$categoria="";
+      if (!is_int($Item["categoria"])){
+      $categoria = Categoria::updateOrCreate(
+    // 1º argumento: como identificar a categoria (chave única)
+    [
+        'nome'     => $Item["categoria"],
+        'tipo'     => 'PRODUTO',
+        'grupo_id' => $grupo['id'],
+    ],
+    // 2º argumento: valores a criar/atualizar
+    [
+        'ativo' => 1,
+    ]
+);
+ $Item["categoria"]=$categoria->id;
+        }
+       
+      
+    //   dd($Item["categoria"],$categoria);
 
      $produto=   Produto::updateOrCreate(
             [
@@ -82,7 +109,7 @@ public function store(Request $request)
     [
 
         'preco_compra' => $Item["Preço Compra"],
-        'iva' => 16,
+        'iva' =>$Item['IVA'],
         'preco_venda1' => $Item["Preço Venda cliente 1"],
         'preco_venda2' => $Item["Preço Venda cliente 2"],
         'estoque' => $Item["Stock"],
@@ -160,77 +187,407 @@ public function store(Request $request)
 }
 
 
+public function show($id)
+{
+    $compra = Compra::where('id', $id)
+        ->with([
+            'produtosItem.produto.categoria.grupo.listaatributo',
+            'produtosItem.produto.categoria.atributos',
+            'produtosItem.outrosatributos',
+            'produtosItem.produto.categoria'
+        ])
+        ->first();
 
-    public function show($id)
-    {
-        $compra = Compra::where('id', $id)
-            ->with([
-                'produtosItem.produto.categoria.grupo.listaatributo',
-                'produtosItem.produto.categoria.atributos',
-                'produtosItem.outrosatributos',
-                'produtosItem.produto.categoria'
-            ])
-            ->first();
+    // ==========================================
+    // COMPRA NÃO ENCONTRADA
+    // ==========================================
 
-        if (!$compra) {
-            return response()->json(['dados' => []]);
-        }
-
-        $collecao = collect();
-
-        foreach ($compra->produtosItem as $item) {
-            $produto = $item->produto;
-            $grupo = $produto?->categoria?->grupo;
-            $grupoAtributos = $grupo?->listaatributo ?? collect();
-            $dadosAtributos = json_decode($item->outrosatributos?->outrosAtributos ?? '{}', true) ?? [];
-            $fotos = json_decode($item->outrosatributos?->fotos ?? '[]', true) ?? [];
-            $armazem = $item->Armazem_id ? Armazem::find($item->Armazem_id) : null;
-
-            foreach ($grupoAtributos as $atributo) {
-                $nomeAtributo = $atributo->Descricao ?? $atributo->nome;
-                if (isset($dadosAtributos[$nomeAtributo])) {
-                    $dadosAtributos[$nomeAtributo] = $dadosAtributos[$nomeAtributo];
-                }
-            }
-
-            foreach ($produto?->categoria?->atributos ?? [] as $atributo) {
-                $nomeAtributo = $atributo->Descricao ?? $atributo->nome;
-                if (isset($dadosAtributos[$nomeAtributo])) {
-                    $dadosAtributos[$nomeAtributo] = $dadosAtributos[$nomeAtributo];
-                }
-            }
-
-            $linhaProduto = [
-                'id' => $item->id,
-                'categoria' => $produto?->categoria?->id ?? null,
-                'Nome' => $produto?->nome ?? '',
-                'grupo' => $grupo?->nome ?? 'Sem grupo',
-                'armazem' => $armazem?->Descricao ?? $item->Armazem_id ?? '',
-                'Preço Compra' => (float) ($item->preco_compra ?? 0),
-                'iva' => (float) ($item->iva ?? 0),
-                'Preço Venda cliente 1' => (float) ($item->preco_venda1 ?? 0),
-                'Preço Venda cliente 2' => (float) ($item->preco_venda2 ?? 0),
-                'Desconto (%)' => (float) ($item->desconto ?? 0),
-                'Venda com IVA cliente 1' => round(((float) ($item->preco_venda1 ?? 0)) * ($item->iva ?? 1), 2),
-                'Venda com IVA cliente 2' => round(((float) ($item->preco_venda2 ?? 0)) * ($item->iva ?? 1), 2),
-                'Stock' => (int) ($item->estoque ?? 0),
-                'fotos' => $fotos,
-                'outros_Atributos' => !empty($dadosAtributos) ? implode(' | ', array_map(
-                    fn ($chave, $valor) => $chave . ': ' . $valor,
-                    array_keys($dadosAtributos),
-                    array_values($dadosAtributos)
-                )) : '',
-            ];
-
-            foreach ($dadosAtributos as $key => $valor) {
-                $linhaProduto[$key] = is_numeric($valor) ? (float) $valor : $valor;
-            }
-
-            $collecao->push((object) $linhaProduto);
-        }
-
-        return response()->json(['dados' => $collecao]);
+    if (!$compra) {
+        return response()->json([
+            'dados' => []
+        ]);
     }
+
+    // ==========================================
+    // COLEÇÃO FINAL
+    // ==========================================
+
+    $collecao = collect();
+
+    // ==========================================
+    // PERCORRER OS PRODUTOS DA COMPRA
+    // ==========================================
+
+    foreach ($compra->produtosItem as $item) {
+
+        // ==========================================
+        // PRODUTO
+        // ==========================================
+
+        $produto = $item->produto;
+
+        // ==========================================
+        // CATEGORIA
+        // ==========================================
+
+        $categoria = $produto?->categoria;
+
+        // ==========================================
+        // GRUPO
+        // ==========================================
+
+        $grupo = $categoria?->grupo;
+
+        // ==========================================
+        // ATRIBUTOS DO GRUPO
+        // ==========================================
+
+        $grupoAtributos = $grupo?->listaatributo ?? collect();
+
+        // ==========================================
+        // ATRIBUTOS DA CATEGORIA
+        // ==========================================
+
+        $categoriaAtributos = $categoria?->atributos ?? collect();
+
+        // ==========================================
+        // OUTROS ATRIBUTOS GUARDADOS
+        // ==========================================
+
+        $dadosAtributos = json_decode(
+            $item->outrosatributos?->outrosAtributos ?? '{}',
+            true
+        ) ?? [];
+
+        // ==========================================
+        // FOTOS
+        // ==========================================
+
+        $fotos = json_decode(
+            $item->outrosatributos?->fotos ?? '[]',
+            true
+        ) ?? [];
+
+        // Garantir array
+        if (!is_array($fotos)) {
+            $fotos = [];
+        }
+
+        // ==========================================
+        // ARMAZÉM
+        // ==========================================
+
+        $armazem = $item->Armazem_id
+            ? Armazem::find($item->Armazem_id)
+            : null;
+
+        // ==========================================
+        // CAMPOS QUE JÁ SÃO COLUNAS DA TABELA
+        // ==========================================
+
+        $camposTabela = [
+            'id',
+            'foto',
+            'fotos',
+
+            'categoria',
+            'Nome',
+            'grupo',
+            'armazem',
+
+            'IVA',
+            'iva',
+            'lucro',
+
+            'Desconto (%)',
+
+            'Stock',
+
+            'Preço Compra',
+            'Preço Venda',
+
+            'Preço Venda cliente 1',
+            'Preço Venda cliente 2',
+
+            'Venda com IVA cliente 1',
+            'Venda com IVA cliente 2',
+
+            'outros_Atributos',
+        ];
+
+        // ==========================================
+        // ATRIBUTOS DO GRUPO
+        // ==========================================
+
+        foreach ($grupoAtributos as $atributo) {
+
+            /*
+             * Preferimos "nome" como identificador técnico.
+             * Se não existir, usamos "Descricao".
+             */
+            $nomeAtributo =
+                $atributo->nome
+                ?? $atributo->Descricao
+                ?? null;
+
+            if (!$nomeAtributo) {
+                continue;
+            }
+
+            /*
+             * Registrar como campo conhecido da tabela.
+             */
+            $camposTabela[] = $nomeAtributo;
+
+        }
+
+        // ==========================================
+        // ATRIBUTOS DA CATEGORIA
+        // ==========================================
+
+        foreach ($categoriaAtributos as $atributo) {
+
+            $nomeAtributo =
+                $atributo->nome
+                ?? $atributo->Descricao
+                ?? null;
+
+            if (!$nomeAtributo) {
+                continue;
+            }
+
+            /*
+             * Registrar como campo conhecido.
+             */
+            $camposTabela[] = $nomeAtributo;
+        }
+
+        // ==========================================
+        // REMOVER DUPLICADOS
+        // ==========================================
+
+        $camposTabela = array_unique($camposTabela);
+
+        // ==========================================
+        // LINHA PRINCIPAL DO PRODUTO
+        // ==========================================
+
+        $linhaProduto = [
+
+            // --------------------------------------
+            // IDENTIFICAÇÃO
+            // --------------------------------------
+
+            'id' => $item->id,
+
+            // --------------------------------------
+            // CATEGORIA
+            // --------------------------------------
+
+            'categoria' => $categoria?->id ?? null,
+
+            // --------------------------------------
+            // NOME
+            // --------------------------------------
+
+            'Nome' => $produto?->nome ?? '',
+
+            // --------------------------------------
+            // GRUPO
+            // --------------------------------------
+
+            'grupo' => $grupo?->nome ?? 'Sem grupo',
+
+            // --------------------------------------
+            // ARMAZÉM
+            // --------------------------------------
+
+            'armazem' =>
+                $armazem?->Descricao
+                ?? $item->Armazem_id
+                ?? '',
+
+            // --------------------------------------
+            // IVA
+            // --------------------------------------
+
+            'IVA' => (float) ($item->iva ?? 0),
+
+            'iva' => (float) ($item->iva ?? 0),
+
+            // --------------------------------------
+            // LUCRO
+            // --------------------------------------
+
+            'lucro' => (float) ($item->lucro ?? 0),
+
+            // --------------------------------------
+            // PREÇO DE COMPRA
+            // --------------------------------------
+
+            'Preço Compra' =>
+                (float) ($item->preco_compra ?? 0),
+
+            // --------------------------------------
+            // PREÇO VENDA CLIENTE 1
+            // --------------------------------------
+
+            'Preço Venda cliente 1' =>
+                (float) ($item->preco_venda1 ?? 0),
+
+            // --------------------------------------
+            // PREÇO VENDA CLIENTE 2
+            // --------------------------------------
+
+            'Preço Venda cliente 2' =>
+                (float) ($item->preco_venda2 ?? 0),
+
+            // --------------------------------------
+            // DESCONTO
+            // --------------------------------------
+
+            'Desconto (%)' =>
+                (float) ($item->desconto ?? 0),
+
+            // --------------------------------------
+            // VENDA COM IVA CLIENTE 1
+            // --------------------------------------
+
+            'Venda com IVA cliente 1' =>
+                round(
+                    (float) ($item->preco_venda1 ?? 0)
+                    * (float) ($item->iva ?? 1),
+                    2
+                ),
+
+            // --------------------------------------
+            // VENDA COM IVA CLIENTE 2
+            // --------------------------------------
+
+            'Venda com IVA cliente 2' =>
+                round(
+                    (float) ($item->preco_venda2 ?? 0)
+                    * (float) ($item->iva ?? 1),
+                    2
+                ),
+
+            // --------------------------------------
+            // STOCK
+            // --------------------------------------
+
+            'Stock' =>
+                (int) ($item->estoque ?? 0),
+
+            // --------------------------------------
+            // FOTOS
+            // --------------------------------------
+
+            'fotos' => $fotos,
+
+        ];
+
+        // ==========================================
+        // COLOCAR ATRIBUTOS CONHECIDOS COMO
+        // CAMPOS NORMAIS DA LINHA
+        // ==========================================
+
+        foreach ($dadosAtributos as $key => $valor) {
+
+            // Ignorar vazio
+            if (
+                $valor === null ||
+                $valor === ''
+            ) {
+                continue;
+            }
+
+            /*
+             * Verificar se este atributo pertence
+             * às colunas configuradas.
+             */
+            if (in_array($key, $camposTabela, true)) {
+
+                $linhaProduto[$key] =
+                    is_numeric($valor)
+                        ? (float) $valor
+                        : $valor;
+            }
+        }
+
+        // ==========================================
+        // FORMAR "OUTROS ATRIBUTOS"
+        // ==========================================
+
+        $outrosAtributos = [];
+
+        foreach ($dadosAtributos as $key => $valor) {
+
+            // --------------------------------------
+            // IGNORAR VAZIOS
+            // --------------------------------------
+
+            if (
+                $valor === null ||
+                $valor === ''
+            ) {
+                continue;
+            }
+
+            // --------------------------------------
+            // SE JÁ É COLUNA, NÃO VAI PARA OUTROS
+            // --------------------------------------
+
+            if (in_array($key, $camposTabela, true)) {
+                continue;
+            }
+
+            // --------------------------------------
+            // É REALMENTE UM OUTRO ATRIBUTO
+            // --------------------------------------
+
+            if (is_array($valor)) {
+
+                $valor = implode(
+                    ', ',
+                    array_map(
+                        fn ($v) => is_scalar($v)
+                            ? (string) $v
+                            : json_encode($v),
+                        $valor
+                    )
+                );
+            }
+
+            $outrosAtributos[] =
+                $key . ': ' . $valor;
+        }
+
+        // ==========================================
+        // GUARDAR OUTROS ATRIBUTOS
+        // ==========================================
+
+        $linhaProduto['outros_Atributos'] =
+            !empty($outrosAtributos)
+                ? implode(' | ', $outrosAtributos)
+                : '';
+
+        // ==========================================
+        // ADICIONAR À COLEÇÃO
+        // ==========================================
+
+        $collecao->push(
+            (object) $linhaProduto
+        );
+    }
+
+    // ==========================================
+    // RETORNAR PARA O VUE
+    // ==========================================
+
+    return response()->json([
+        'dados' => $collecao
+    ]);
+}
 
     public function update(Request $request, $id)
     {
@@ -374,5 +731,152 @@ return Excel::download(
     'ModeloImportacao.xlsx'
 );
 
+}
+
+ // app/Http/Controllers/ProdutoController.php
+
+public function gerarModeloImport($grupo)
+{
+    // // Buscar grupo + atributos dinâmicos
+    // $grupoItem = \App\Models\gruposItem::with('listaatributo')
+    //     ->where('nome', $grupo)
+    //     ->firstOrFail();
+
+    // // ----- Cabeçalhos FIXOS -----
+    // $headers = [
+    //     'categoria',
+    //     'Nome',
+    //     'IVA',
+    //     'lucro',
+    //     'Desconto (%)',
+    //     'Stock',
+    //     'Preço Compra',
+    //     'Preço Venda cliente 1',
+    //     'Preço Venda cliente 2',
+    //     'Venda com IVA cliente 1',
+    //     'Venda com IVA cliente 2',
+    //     'armazem',           // descrição ou ID do armazém
+    //     'outros_Atributos',
+    // ];
+
+    // // ----- Atributos dinâmicos (intercalados antes dos fixos de preço) -----
+    // $atributosDinamicos = $grupoItem->listaatributo->pluck('Descricao')->toArray();
+
+    // // Inserir atributos dinâmicos logo depois de "Desconto (%)"
+    // $posInsercao = array_search('Desconto (%)', $headers) + 1;
+    // array_splice($headers, $posInsercao, 0, $atributosDinamicos);
+
+    // // ----- Criar ficheiro -----
+    // $spreadsheet = new Spreadsheet();
+    // $sheet = $spreadsheet->getActiveSheet();
+    // $sheet->setTitle('Modelo ' . $grupo);
+
+    // // Linha 1: cabeçalhos
+    // $col = 'A';
+    // foreach ($headers as $h) {
+    //     $sheet->setCellValue($col . '1', $h);
+    //     $col++;
+    // }
+
+    // // Estilo do cabeçalho
+    // $ultimaCol = chr(ord('A') + count($headers) - 1);
+    // $sheet->getStyle("A1:{$ultimaCol}1")->applyFromArray([
+    //     'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+    //     'fill' => [
+    //         'fillType' => Fill::FILL_SOLID,
+    //         'startColor' => ['rgb' => '4F46E5'],
+    //     ],
+    //     'alignment' => ['horizontal' => 'center', 'vertical' => 'center'],
+    //     'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
+    // ]);
+    // $sheet->getRowDimension(1)->setRowHeight(28);
+    // $sheet->freezePane('A2');
+
+    // // Linha 2: exemplo (opcional — ajuda o utilizador)
+    // $exemplo = [
+    //     'categoria'                => '1',       // ID da categoria
+    //     'Nome'                     => 'Parafuso M8',
+    //     'IVA'                      => 16,
+    //     'lucro'                    => 20,
+    //     'Desconto (%)'             => 0,
+    //     'Stock'                    => 100,
+    //     'Preço Compra'             => 50.00,
+    //     'Preço Venda cliente 1'    => 90.00,
+    //     'Preço Venda cliente 2'    => 85.00,
+    //     'Venda com IVA cliente 1'  => 104.40,
+    //     'Venda com IVA cliente 2'  => 98.60,
+    //     'armazem'                  => 'Armazém Central',
+    //     'outros_Atributos'         => 'Cor: Prateado | Material: Aço',
+    // ];
+    // foreach ($atributosDinamicos as $atrib) {
+    //     $exemplo[$atrib] = ''; // deixa vazio no exemplo
+    // }
+
+    // $col = 'A';
+    // foreach ($headers as $h) {
+    //     $sheet->setCellValue($col . '2', $exemplo[$h] ?? '');
+    //     $col++;
+    // }
+    // $sheet->getStyle("A2:{$ultimaCol}2")->getFont()->setItalic(true)->getColor()->setRGB('9CA3AF');
+
+    // // Auto-ajustar largura
+    // foreach (range('A', $ultimaCol) as $c) {
+    //     $sheet->getColumnDimension($c)->setAutoSize(true);
+    // }
+
+    // // ----- Stream da resposta -----
+    // $nome = 'Modelo_' . preg_replace('/\s+/', '_', $grupo) . '.xlsx';
+
+    // return new StreamedResponse(function () use ($spreadsheet) {
+    //     $writer = new Xlsx($spreadsheet);
+    //     $writer->save('php://output');
+    // }, 200, [
+    //     'Content-Type'        => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    //     'Content-Disposition' => 'attachment; filename="' . $nome . '"',
+    //     'Cache-Control'       => 'max-age=0',
+    // ]);
+
+    //  $nome = 'Modelo_' .
+    //     preg_replace('/\s+/', '_', $grupo) .
+    //     '.xlsx';
+
+
+    //   return Excel::download(
+    //     new ModeloProdutoExport($grupo),
+    //     $nome
+    // );
+
+
+    $abas = [
+
+        'eletronicos',
+        'P.A'
+
+    ];
+
+    $abas=gruposItem::all();
+
+
+
+    $categorias = [
+
+        'acessores',
+        'processadores'
+
+    ];
+
+
+
+
+    return Excel::download(
+
+        new ModeloCompletoExport(
+            $abas,
+            $categorias
+        ),
+
+        'modelo_produtos.xlsx'
+
+    );
 }
 }

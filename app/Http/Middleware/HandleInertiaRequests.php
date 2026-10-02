@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\Empresa;
+use App\Models\loja_desc;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -32,6 +33,7 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $empresa =Empresa::where("id",1)->first();
+        $loja=loja_desc::all();
         $usuario=User::where("id",$request->user()?->id??0)->with("roles.permissions")->first();
         return [
             ...parent::share($request),
@@ -39,6 +41,7 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user(),
             ], 'empresa' =>  $empresa,
             'usuario'=>$usuario,
+            'loja'=>$loja,
         ];
     }
 }
