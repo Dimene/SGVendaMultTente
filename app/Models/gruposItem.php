@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Categoria;
-use App\Models\listaatributos;
+// use App\Models\listaatributos;
 class gruposItem extends Model
 {
     //
