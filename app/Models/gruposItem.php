@@ -3,7 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-
+use App\Models\Categoria;
+use App\Models\listaatributos;
 class gruposItem extends Model
 {
     //
@@ -25,7 +26,7 @@ public function listaatributo(){
 
 public  function  categoria(){
 
-    return $this->hasMany(categoria::class,'grupo_id','id');
+    return $this->hasMany(Categoria::class,'grupo_id','id');
 }
 
 
