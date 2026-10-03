@@ -27,7 +27,8 @@ protected $table="fornecedores";
 
     public function distrito()
     {
-        return $this->hasOne(distrito::class,"id","cidade");
+        // get dustritos
+        return $this->hasOne(Distrito::class,"id","cidade");
     }
 
     public function provincia()
