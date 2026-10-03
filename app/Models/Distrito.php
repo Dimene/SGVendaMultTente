@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Distrito extends Model
 {
-    protected $table = 'Distritos';
+    protected $table = 'distritos';
 
     public $timestamps = false;
 
